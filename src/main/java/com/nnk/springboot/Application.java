@@ -9,4 +9,7 @@ public class Application {
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);
 	}
+
+	// https://www.geeksforgeeks.org/aspect-oriented-programming-aop-in-spring-framework/
+	//https://gayerie.dev/docs/spring/spring/aop.html
 }

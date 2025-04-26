@@ -1,13 +1,161 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title> Spring Boot </title>
-    <link rel="stylesheet" href="/css/styles.css"/>
+    <title>Poseidon Capital Solutions | Trading</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap">
+    <style>
+        /* Palette Poseidon */
+        :root {
+            --deep-blue: #002366;
+            --turquoise: #40E0D0;
+            --white: #FFFFFF;
+            --light-gray: #F5F5F5;
+            --shadow: 0 4px 12px rgba(0, 35, 102, 0.15);
+        }
+
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background-color: var(--light-gray);
+            margin: 0;
+            padding: 0;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.03"><path d="M0 70 Q25 50 50 70 T100 70" fill="none" stroke="%23002366" stroke-width="2"/></svg>');
+            background-size: 200px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            background-color: var(--deep-blue);
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            flex-direction: column;
+            color: var(--white);
+        }
+
+        .logo-main {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            line-height: 1;
+        }
+
+        .logo-sub {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            letter-spacing: 0.5px;
+            margin-top: 0.2rem;
+        }
+
+        .auth-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .auth-links a {
+            color: var(--white);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .auth-links a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .auth-links a:first-child {
+            background-color: var(--turquoise);
+            color: var(--deep-blue);
+        }
+
+        .auth-links a:first-child:hover {
+            background-color: rgba(64, 224, 208, 0.8);
+        }
+
+        .hero {
+            text-align: center;
+            padding: 4rem 0;
+            background: linear-gradient(135deg, rgba(0, 35, 102, 0.05) 0%, rgba(64, 224, 208, 0.05) 100%);
+            border-radius: 8px;
+            margin-top: 2rem;
+        }
+
+        h1 {
+            color: var(--deep-blue);
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            color: var(--deep-blue);
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        .cta-button {
+            background-color: var(--turquoise);
+            color: var(--deep-blue);
+            border: none;
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(64, 224, 208, 0.3);
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--deep-blue);
+            margin-top: 3rem;
+            border-top: 1px solid rgba(0, 35, 102, 0.1);
+        }
+    </style>
 </head>
 <body>
-<h3> HOME PAGE </h3>
-<p>
-    <a href="/login">Login</a> or create one <a href="/user/list">User management</a>
-</p>
+<header>
+    <div class="logo">
+        <div class="logo-main">Poseidon</div>
+        <div class="logo-sub">Capital Solutions</div>
+    </div>
+    <div class="auth-links">
+        <a href="/login">Login</a>
+        <a href="/user/list">User Management</a>
+    </div>
+</header>
+
+<div class="container">
+    <div class="hero">
+        <h1>Trading App UI</h1>
+        <p>Advanced trading interface with real-time analytics and portfolio management</p>
+        <a href="/login" class="cta-button">Access Platform</a>
+    </div>
+</div>
+
+<footer>
+    <p>© 2023 Poseidon Capital Solutions. All rights reserved.</p>
+</footer>
 </body>
 </html>

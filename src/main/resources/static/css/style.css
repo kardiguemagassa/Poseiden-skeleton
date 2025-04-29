@@ -1,0 +1,10 @@
+/* Exemple de contenu minimal */
+.container {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+.alert {
+    padding: 10px;
+    margin-bottom: 15px;
+}

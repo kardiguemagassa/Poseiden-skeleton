@@ -3,7 +3,6 @@ package com.nnk.springboot.controllers;
 import com.nnk.springboot.domain.Users;
 import com.nnk.springboot.service.UserService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -14,23 +13,27 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
+@RequestMapping("/user")
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
-    @RequestMapping("/user/list")
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    @GetMapping("/list")
     public String home(Model model) {
         model.addAttribute("users", userService.findAll());
         return "user/list";
     }
 
-    @GetMapping("/user/add")
+    @GetMapping("/add")
     public String addUser(Users user) {
         return "user/add";
     }
 
-    @PostMapping("/user/validate")
+    @PostMapping("/validate")
     public String validate(@Valid Users user, BindingResult result, Model model) {
         if (!result.hasErrors()) {
             userService.save(user);
@@ -40,14 +43,14 @@ public class UserController {
         return "user/add";
     }
 
-    @GetMapping("/user/update/{id}")
+    @GetMapping("/update/{id}")
     public String showUpdateForm(@PathVariable("id") Integer id, Model model) {
         Users user = userService.findById(id);
         model.addAttribute("user", user);
         return "user/update";
     }
 
-    @PostMapping("/user/update/{id}")
+    @PostMapping("/update/{id}")
     public String updateUser(@PathVariable("id") Integer id, @Valid Users user, BindingResult result, Model model) {
         if (result.hasErrors()) {
             return "user/update";
@@ -58,7 +61,7 @@ public class UserController {
         return "redirect:/user/list";
     }
 
-    @GetMapping("/user/delete/{id}")
+    @GetMapping("/delete/{id}")
     public String deleteUser(@PathVariable("id") Integer id, Model model) {
         userService.deleteById(id);
         model.addAttribute("users", userService.findAll());

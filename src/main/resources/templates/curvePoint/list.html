@@ -34,7 +34,7 @@
 	</div>
 </header>
 
-<div class="container">
+<main class="container">
 
 <!--	<div class="row">-->
 <!--		<div class="col-6">-->
@@ -57,7 +57,9 @@
 	<div class="row"><h2>Curve Point List</h2></div>
 
 	<div class="row">
+
 		<a href="/curvePoint/add" class="btn btn-primary btn-sm">Add New</a>
+
 		<table class="table table-bordered">
 			<thead>
 				<tr>
@@ -68,21 +70,25 @@
 					<th>Action</th>
 				</tr>
 			</thead>
+
 			<tbody>
 				<tr th:each="curvePoint : ${curvePoints}">
 					<td style="width: 10%" th:text="${curvePoint.id}"></td>
 					<td th:text="${curvePoint.id}"></td>
 					<td th:text="${curvePoint.term}"></td>
 					<td th:text="${curvePoint.value}"></td>
+
 					<td style="width: 15%" class="text-center">
 						<a th:href="@{/curvePoint/update/{id}(id=${curvePoint.id})}">Edit</a>&nbsp;|&nbsp;
 						<a th:href="@{/curvePoint/delete/{id}(id=${curvePoint.id})}">Delete</a>
 					</td>
+
 				</tr>
 			</tbody>
 		</table>
+
 	</div>
-</div>
+</main>
 
 <footer class="text-center mt-5">
 	<p>© 2025 Poseidon Capital Solutions created by Kardigué. All rights reserved.</p>

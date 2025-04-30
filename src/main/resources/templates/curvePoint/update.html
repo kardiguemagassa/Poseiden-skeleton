@@ -23,6 +23,7 @@
 </header>
 
 <div class="container">
+
 	<h2>Update CurvePoint</h2>
 
 	<form action="#" th:action="@{/curvePoint/update/{id}(id=${curvePoint.id})}" th:object="${curvePoint}" method="post" class="form-horizontal" style="width: 100%">
@@ -44,6 +45,7 @@
 			<a class="btnCancel" href="/curvePoint/list">Cancel</a>
 			<input class="btnUpdate" type="submit" value="Update Curve Point">
 		</div>
+
 	</form>
 </div>
 

@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta name="description" content="pdate User">
+	<meta name="description" content="Add New CurvePoint">
 	<meta name="author" content="Kardigué Magassa">
 	<title>Add New CurvePoint</title>
 	<link rel="icon" href="/favicon.ico" type="image/x-icon">
@@ -26,12 +26,15 @@
 	<div class="row"><h2>Add New Curve Point</h2></div>
 
 	<div class="row">
+
 		<form action="#" th:action="@{/curvePoint/validate}" th:object="${curvePoint}" method="post" class="form-horizontal" style="width: 100%">
+
 			<div class="form-group">
 				<label for="term" class="col-sm-2 control-label">Term</label>
 				<input type="text" th:field="*{term}" id="term" placeholder="Term" >
 				<p class="text-danger" th:if="${#fields.hasErrors('term')}" th:errors="*{term}"></p>
 			</div>
+
 			<div class="form-group">
 				<label for="value" class="col-sm-2 control-label">Value</label>
 				<input type="number" th:field="*{value}" id="value" placeholder="Value">
@@ -42,9 +45,9 @@
 				<a class="btnCancel" href="/curvePoint/list">Cancel</a>
 				<input class="btnUpdate" type="submit" value="Add Curve Point">
 			</div>
+
 		</form>
 	</div>
-
 </div>
 
 <footer>

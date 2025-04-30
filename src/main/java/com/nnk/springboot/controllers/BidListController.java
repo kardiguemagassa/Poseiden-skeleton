@@ -32,7 +32,8 @@ public class BidListController {
     }
 
     @GetMapping("/add")
-    public String addBidForm(BidList bid) {
+    public String addBidForm(BidList bidList, Model model) {
+        model.addAttribute("bidList", bidList);
         return "bidList/add";
     }
 

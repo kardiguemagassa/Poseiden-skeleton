@@ -1,49 +1,54 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" 
-	  xmlns:th="http://www.thymeleaf.org">
+<html lang="fr" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
 <head>
-<meta charset="utf-8"/>
-<title>Home</title>
-<link rel="stylesheet" href="../../css/bootstrap.min.css" >
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="Update BidList">
+	<meta name="author" content="Kardigué Magassa">
+	<title>Update BidList</title>
+	<link rel="icon" href="/favicon.ico" type="image/x-icon">
+	<link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+	<link rel="stylesheet" th:href="@{/css/user/updateUser.css}">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap">
 </head>
 <body>
-<div class="container">
-	<div class="row">
-		<h2>Update Bid</h2>
-	</div>
 
-	<div class="row">
-		<form action="#" th:action="@{/bidList/update/{id}(id=${bidList.bidListId})}" th:object="${bidList}" method="post" class="form-horizontal" style="width: 100%">
-			<div class="form-group">
-				<label for="account" class="col-sm-2 control-label">Account</label>
-				<div class="col-sm-10">
-					<input type="text" th:field="*{account}" id="account" placeholder="Account" class="col-4">
-					<p class="text-danger" th:if="${#fields.hasErrors('account')}" th:errors="*{account}"></p>
-				</div>
-			</div>
-			<div class="form-group">
-				<label for="type" class="col-sm-2 control-label">Type</label>
-				<div class="col-sm-10">
-					<input type="text" th:field="*{type}" id="type" placeholder="Type" class="col-4">
-					<p class="text-danger" th:if="${#fields.hasErrors('type')}" th:errors="*{type}"></p>
-				</div>
-			</div>
+<header>
+	<div class="logo">
+		<div class="logo-main">Poseidon</div>
+		<div class="logo-sub">Capital Solutions</div>
+	</div>
+	<div class="auth-links">
+	</div>
+</header>
+
+<div class="container">
+	<h2>Update Bid</h2>
+
+	<form action="#" th:action="@{/bidList/update/{id}(id=${bidList.bidListId})}" th:object="${bidList}" method="post" class="form-horizontal" style="width: 100%">
+
+		<div class="form-group">
+			<label for="account" class="col-sm-2 control-label">Account</label>
+			<input type="text" th:field="*{account}" id="account" placeholder="Account">
+			<p class="text-danger" th:if="${#fields.hasErrors('account')}" th:errors="*{account}"></p>
+		</div>
+		<div class="form-group">
+			<label for="type" class="col-sm-2 control-label">Type</label>
+			<input type="text" th:field="*{type}" id="type" placeholder="Type" >
+			<p class="text-danger" th:if="${#fields.hasErrors('type')}" th:errors="*{type}"></p>
+		</div>
 			<div class="form-group">
 				<label for="bidQuantity" class="col-sm-2 control-label">Bid Quantity</label>
-				<div class="col-sm-10">
-					<input type="number" th:field="*{bidQuantity}" id="bidQuantity" placeholder="Bid Quantity" class="col-4">
-					<p class="text-danger" th:if="${#fields.hasErrors('bidQuantity')}" th:errors="*{bidQuantity}"></p>
-				</div>
+				<input type="number" th:field="*{bidQuantity}" id="bidQuantity" placeholder="Bid Quantity" >
+				<p class="text-danger" th:if="${#fields.hasErrors('bidQuantity')}" th:errors="*{bidQuantity}"></p>
 			</div>
 
-
-			<div class="form-group">
-				<div class="col-sm-12">
-					<input type="hidden" th:field="*{id}">
-					<a class="btn btn-danger btn-sm" href="/bidList/list">Cancel</a>
-					<input class="btn btn-primary btn-sm" type="submit" value="Update Bid List">
-				</div>
+			<div class="form-group-cancel-update">
+				<input type="hidden" th:field="*{bidListId}">
+				<a class="btnCancel" href="/bidList/list">Cancel</a>
+				<input class="btnUpdate" type="submit" value="Update Bid List">
 			</div>
+
 		</form>
 	</div>
 

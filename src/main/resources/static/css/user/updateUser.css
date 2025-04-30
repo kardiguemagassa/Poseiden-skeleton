@@ -3,6 +3,7 @@
     --turquoise: #40E0D0;
     --white: #FFFFFF;
     --light-gray: #F5F5F5;
+    --red-cancel: #dc3545;
     --shadow: 0 4px 12px rgba(0, 35, 102, 0.15);
 }
 
@@ -131,6 +132,71 @@ input:focus {
 
 .btn-primary:hover {
     background-color: var(--deep-blue);
+}
+
+.form-group-cancel-update {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.role-options {
+    display: flex;
+    gap: 1rem;
+}
+
+.control-label {
+    text-align: center;
+}
+
+.radio-option {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #fff;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.3s ease, background 0.3s ease;
+}
+
+.radio-option input {
+    margin-right: 8px;
+}
+
+.radio-option:hover {
+    border-color: var(--deep-blue);
+    background: var(--light-gray);
+}
+
+.btnCancel,
+.btnUpdate {
+    flex: 1;
+    text-align: center;
+    padding: 10px 0;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    background: var(--deep-blue);
+    color: var(--white);
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.btnCancel {
+    background: var(--red-cancel);
+    color: var(--white);
+}
+
+a:link,
+a:visited,
+a:hover,
+a:active {
+    text-decoration: none;
 }
 
 .alert {

@@ -1,25 +1,35 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" 
-	  xmlns:th="http://www.thymeleaf.org">
+<html lang="fr" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
 <head>
-<meta charset="utf-8"/>
-<title>Home</title>
-<link rel="stylesheet" type="text/css" href="../../css/bootstrap.min.css">
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="List User">
+	<meta name="author" content="Kardigué Magassa">
+	<title>List User</title>
+	<link rel="icon" href="/favicon.ico" type="image/x-icon">
+	<link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+	<link rel="stylesheet" th:href="@{/css/user/listUser.css}">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap">
 </head>
 <body>
-<div class="container">
-	<div class="row">
-		<div class="col-6">
 
-		</div>
-		<div class="col-6 text-right">
-			<a href="/">Home</a>&nbsp;|&nbsp;<a href="/app/login">Login</a>
-			<form action="#" th:action="@{/logout}" method="POST"> <input type="submit" th:value="Logout" /></form>
-		</div>
+<header>
+	<div class="logo">
+		<div class="logo-main">Poseidon</div>
+		<div class="logo-sub">Capital Solutions</div>
 	</div>
+	<div class="auth-links">
+		<form action="#" th:action="@{/logout}" method="POST">
+			<input class="logout" type="submit" th:value="Logout" />
+		</form>
+	</div>
+</header>
+
+<div class="container">
+
 	<div class="row"><h2>User List</h2></div>
 	<div class="row">
-		<a href="/user/add" class="btn btn-primary btn-sm">Add New</a>
+		<a href="/user/add" class="btn-primary btn-sm">Add New</a>
 		<table class="table table-bordered">
 			<thead>
 				<tr>
@@ -36,14 +46,24 @@
 					<td th:text="${user.fullname}"></td>
 					<td th:text="${user.username}"></td>
 					<td style="width: 25%" th:text="${user.role}"></td>
+
 					<td style="width: 15%" class="text-center">
-						<a th:href="@{/user/update/{id}(id=${user.id})}">Edit</a>&nbsp;|&nbsp;
-						<a th:href="@{/user/delete/{id}(id=${user.id})}">Delete</a>
+						<div class="action-buttons">
+							<a th:href="@{/user/update/{id}(id=${user.id})}" class="edit-btn">Edit</a>
+							<a th:href="@{/user/delete/{id}(id=${user.id})}" class="delete-btn">Delete</a>
+						</div>
 					</td>
 				</tr>
 			</tbody>
 		</table>
 	</div>
 </div>
+
+<footer>
+	<p>© 2025 Poseidon Capital Solutions created by Kardigué. All rights reserved.</p>
+</footer>
+
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/js/app.js}"></script>
 </body>
 </html>

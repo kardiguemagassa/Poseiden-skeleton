@@ -1,10 +1,15 @@
-/* Palette Poseidon */
 :root {
     --deep-blue: #002366;
     --turquoise: #40E0D0;
     --white: #FFFFFF;
     --light-gray: #F5F5F5;
     --shadow: 0 4px 12px rgba(0, 35, 102, 0.15);
+}
+
+*,::before, ::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {

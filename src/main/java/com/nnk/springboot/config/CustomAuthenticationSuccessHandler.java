@@ -4,6 +4,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
@@ -16,18 +17,13 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
 
-        boolean isAdmin = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        String redirectUrl = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(role -> role.equals("ROLE_ADMIN") || role.equals("ROLE_USER"))
+                .map(role -> "/user/list") // pour les deux rôles pour l’instant thymeleaf gere le reste
+                .findFirst()
+                .orElse("/");
 
-        boolean isUser = authentication.getAuthorities().stream()
-                .anyMatch(u -> u.getAuthority().equals("ROLE_USER"));
-
-        if (isAdmin) {
-            response.sendRedirect("/bidList/list");
-        } else if (isUser) {
-            response.sendRedirect("/user/list");
-        } else {
-            response.sendRedirect("/");
-        }
+        response.sendRedirect(redirectUrl);
     }
 }

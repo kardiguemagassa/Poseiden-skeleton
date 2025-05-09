@@ -1,16 +1,17 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<html lang="fr" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+	  xmlns:sec="http://www.w3.org/1999/xhtml">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="description" content="Admin Home Page">
+	<meta name="description" content="Rule List">
 	<meta name="author" content="Kardigué Magassa">
-	<title th:text="${pageTitle} ?: 'Default Title'">Admin Home Page</title>
+	<title>Rule List</title>
 
-	<link rel="icon" href="/favicon.ico" type="image/x-icon">
 	<link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
 	<link rel="stylesheet" th:href="@{/css/style.css}">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap">
 
 </head>
@@ -22,13 +23,18 @@
 		<div class="logo-sub">Capital Solutions</div>
 	</div>
 	<div class="auth-links">
-		<a href="/bidList/list">Bid List</a>
-		<a href="/curvePoint/list">Curve Points</a>
-		<a href="/rating/list">Ratings</a>
-		<a href="/trade/list">Trade</a>
-		<a href="/ruleName/list">Rule</a>
-		<!--	recuperation dynamic de user connecter					        Logged in user: <b th:text="${#httpServletRequest.remoteUser}"></b>-->
-		<form action="#" th:action="@{/logout}" method="POST">
+
+		<a class="authentication">
+			<i class="fa fa-user"></i> Logged in user: <span sec:authentication="name"></span>
+		</a>
+
+		<a th:href="@{/bidList/list}">Bid List</a>
+		<a th:href="@{/curvePoint/list}">Curve Points</a>
+		<a th:href="@{/rating/list}">Ratings</a>
+		<a th:href="@{/trade/list}">Trade</a>
+		<a th:href="@{/ruleName/list}">Rule</a>
+
+		<form action="#" th:action="@{/app/logout}" method="POST">
 			<input class="logout" type="submit" th:value="Logout" />
 		</form>
 	</div>
@@ -83,9 +89,6 @@
 <footer class="text-center mt-5">
 	<p>© 2025 Poseidon Capital Solutions created by Kardigué. All rights reserved.</p>
 </footer>
-
-<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
-<script th:src="@{/js/app.js}"></script>
 
 </body>
 </html>

@@ -3,7 +3,10 @@ logging:
     org:
       springframework: INFO
       springframework.security: DEBUG
-      com.nnk.springboot.service.serviceImpl: DEBUG
+      springframework.web: DEBUG  # pour le débogage
+      com.nnk.springboot.service.serviceImpl: DEBUG # Niveau général pour votre application
+    hibernate:
+      SQL: DEBUG                 # Pour voir les requêtes SQL
 
 spring:
   datasource:
@@ -20,3 +23,36 @@ spring:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
       format_sql: true
     show-sql: true
+
+  # Configure le chemin des pages d'erreur
+  web:
+    resources:
+      chain:
+        enabled: true  # Active l'optimisation des ressources (cache, compression)
+      add-mappings: false # Désactive le handler par défaut
+
+  mvc:
+    favicon:
+      enabled: false
+
+    throw-exception-if-no-handler-found: true
+
+# Désactive la page d'erreur blanche de Spring Boot
+server:
+  error:
+    whitelabel:
+      enabled: false # Désactive la page blanche par défaut
+
+    include-message: always
+    include-binding-errors: always
+
+    # Configuration supplémentaire recommandée
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: health,info
+      endpoint:
+        health:
+          show-details: always
+

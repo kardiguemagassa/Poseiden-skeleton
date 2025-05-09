@@ -11,13 +11,4 @@ public class HomeController {
 	public String home(Model model) {
 		return "home";
 	}
-
-	@GetMapping("/admin/home")
-	public String adminHome(Model model) {
-		return "redirect:/bidList/list";
-	}
-
-//	 return "bidList/list";
-
-
 }

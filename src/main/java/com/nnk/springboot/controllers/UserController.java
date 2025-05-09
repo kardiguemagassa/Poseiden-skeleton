@@ -1,20 +1,24 @@
 package com.nnk.springboot.controllers;
 
 import com.nnk.springboot.domain.Users;
+import com.nnk.springboot.exceptions.DataPersistException;
+import com.nnk.springboot.exceptions.UserAlreadyExistsException;
 import com.nnk.springboot.service.UserService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/user")
 public class UserController {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserController.class);
 
     private final UserService userService;
 
@@ -29,19 +33,32 @@ public class UserController {
     }
 
     @GetMapping("/add")
-    public String addUser(Users user, Model model) {
-        model.addAttribute("user", user);
+    public String addUser(Users users, Model model) {
+        if (!model.containsAttribute("user")) {
+            model.addAttribute("user", users);
+        }
         return "user/add";
     }
 
     @PostMapping("/validate")
-    public String validate(@Valid Users user, BindingResult result, Model model) {
-        if (!result.hasErrors()) {
+    public String createUser(@Valid @ModelAttribute("user") Users user, BindingResult result, RedirectAttributes ra) {
+
+        if (result.hasErrors()) {return "user/add";}
+
+        try {
             userService.save(user);
-            model.addAttribute("users", userService.findAll());
-            return "redirect:/user/list";
+            ra.addFlashAttribute("success", "User created");
+        } catch (UserAlreadyExistsException e) {
+            LOGGER.error("Business error {} occurred: {}", e.getErrorCode(), e.getMessage());
+            result.rejectValue("username", "duplicate", e.getMessage());
+            return "user/add";
+
+        } catch (DataPersistException e) {
+            ra.addFlashAttribute("error", "Technical error");
+            return "redirect:/user/add";
         }
-        return "user/add";
+
+        return "redirect:/user/list";
     }
 
     @GetMapping("/update/{id}")
@@ -52,21 +69,26 @@ public class UserController {
     }
 
     @PostMapping("/update/{id}")
-    public String updateUser(@PathVariable("id") Integer id, @Valid Users user, BindingResult result, Model model) {
+    public String updateUser(@PathVariable Integer id,
+                             @Valid @ModelAttribute("user") Users user,
+                             BindingResult result,
+                             RedirectAttributes ra) {
+
         if (result.hasErrors()) {
             return "user/update";
         }
+
         user.setId(id);
-        userService.save(user);
-        model.addAttribute("users", userService.findAll());
+        userService.save(user); // La vérification se fait maintenant dans le service
+        ra.addFlashAttribute("success", "User updated successfully");
+
         return "redirect:/user/list";
     }
 
     @GetMapping("/delete/{id}")
-    public String deleteUser(@PathVariable("id") Integer id, Model model) {
+    public String deleteUser(@PathVariable Integer id) {
         userService.deleteById(id);
-        model.addAttribute("users", userService.findAll());
-        return "redirect:/user/list";
+        return "redirect:/user/list?success=user.deleted";
     }
 
 }

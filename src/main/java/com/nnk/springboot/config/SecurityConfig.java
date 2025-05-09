@@ -36,6 +36,7 @@ public class SecurityConfig {
                                 "/app/login",
                                 "/css/**",
                                 "/js/**",
+                                "/error/**",
                                 "/images/**"
                         ).permitAll()
                         .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
@@ -50,7 +51,7 @@ public class SecurityConfig {
                         .permitAll()
                 )
                 .logout(logout -> logout
-                        .logoutUrl("/logout")
+                        .logoutUrl("/app/logout")
                         .logoutSuccessUrl("/app/login?logout=true")
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<html lang="fr" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+	  xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,9 +9,9 @@
 	<meta name="author" content="Kardigué Magassa">
 	<title>List User</title>
 
-	<link rel="icon" href="/favicon.ico" type="image/x-icon">
 	<link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
 	<link rel="stylesheet" th:href="@{/css/style.css}">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap">
 
 </head>
@@ -22,7 +23,23 @@
 		<div class="logo-sub">Capital Solutions</div>
 	</div>
 	<div class="auth-links">
-		<form action="#" th:action="@{/logout}" method="POST">
+
+<!--		<p class="welcome-message">Login in user:-->
+<!--			<span sec:authentication="name"></span>-->
+<!--			(<span sec:authentication="principal.authorities"></span>-->
+<!--		</p>-->
+
+		<a class="authentication">
+			<i class="fa fa-user"></i> Logged in user: <span sec:authentication="name"></span>
+		</a>
+
+		<a sec:authorize="hasRole('ADMIN')" th:href="@{/bidList/list}">Bid List</a>
+		<a sec:authorize="hasRole('ADMIN')" th:href="@{/curvePoint/list}">Curve Points</a>
+		<a sec:authorize="hasRole('ADMIN')" th:href="@{/rating/list}">Ratings</a>
+		<a sec:authorize="hasRole('ADMIN')" th:href="@{/trade/list}">Trade</a>
+		<a sec:authorize="hasRole('ADMIN')" th:href="@{/ruleName/list}">Rule</a>
+
+		<form action="#" th:action="@{/app/logout}" method="POST">
 			<input class="logout" type="submit" th:value="Logout" />
 		</form>
 	</div>
@@ -30,9 +47,17 @@
 
 <div class="container">
 
-	<div class="row"><h2>User List</h2></div>
 	<div class="row">
-		<a href="/user/add" class="btn-primary btn-sm">Add New</a>
+		<h2 sec:authorize="hasRole('ADMIN')">Administration - User List</h2>
+		<h2 sec:authorize="hasRole('USER') and !hasRole('ADMIN')">User List</h2>
+	</div>
+
+	<div th:if="${success}">
+		<div class="alert alert-success" th:text="${success}"></div>
+	</div>
+
+	<div class="row">
+		<a href="/user/add" class="btn-primary btn-sm" sec:authorize="hasRole('ADMIN')">Add New</a>
 		<table class="table table-bordered">
 			<thead>
 				<tr>
@@ -51,9 +76,14 @@
 					<td style="width: 25%" th:text="${user.role}"></td>
 
 					<td style="width: 15%" class="text-center">
-						<div class="action-buttons">
+						<div class="action-buttons" sec:authorize="hasRole('ADMIN')">
 							<a th:href="@{/user/update/{id}(id=${user.id})}" class="edit-btn">Edit</a>
-							<a th:href="@{/user/delete/{id}(id=${user.id})}" class="delete-btn">Delete</a>
+
+							<a th:href="@{/user/delete/{id}(id=${user.id})}"
+							   class="delete-btn"
+							   onclick="return confirm('Are you sure you want to delete this user?')" >
+								Delete
+							</a>
 						</div>
 					</td>
 				</tr>
@@ -66,7 +96,5 @@
 	<p>© 2025 Poseidon Capital Solutions created by Kardigué. All rights reserved.</p>
 </footer>
 
-<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
-<script th:src="@{/js/app.js}"></script>
 </body>
 </html>

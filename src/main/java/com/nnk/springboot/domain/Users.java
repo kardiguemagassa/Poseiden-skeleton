@@ -1,6 +1,8 @@
 package com.nnk.springboot.domain;
 
+import com.nnk.validator.ValidPassword;
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
 
@@ -9,10 +11,12 @@ import jakarta.validation.constraints.NotBlank;
 public class Users {
 
     @Id
-    @GeneratedValue(strategy= GenerationType.AUTO)
+    @GeneratedValue(strategy= GenerationType.IDENTITY)
     private Integer id;
+    @Column(unique = true, nullable = false)
     @NotBlank(message = "Username is mandatory")
     private String username;
+    @ValidPassword
     @NotBlank(message = "Password is mandatory")
     private String password;
     @NotBlank(message = "FullName is mandatory")

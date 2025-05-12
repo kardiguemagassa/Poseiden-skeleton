@@ -31,6 +31,12 @@
 	<form action="#" th:action="@{/curvePoint/update/{id}(id=${curvePoint.id})}" th:object="${curvePoint}" method="post" class="form-horizontal" style="width: 100%">
 
 		<div class="form-group">
+			<label for="curveId" class="col-sm-2 control-label">curve Id</label>
+			<input type="number" th:field="*{curveId}" id="curveId" placeholder="Curve Id" >
+			<p class="text-danger" th:if="${#fields.hasErrors('curveId')}" th:errors="*{term}"></p>
+		</div>
+
+		<div class="form-group">
 			<label for="term" class="col-sm-2 control-label">Term</label>
 			<input type="text" th:field="*{term}" id="term" placeholder="Term" >
 			<p class="text-danger" th:if="${#fields.hasErrors('term')}" th:errors="*{term}"></p>

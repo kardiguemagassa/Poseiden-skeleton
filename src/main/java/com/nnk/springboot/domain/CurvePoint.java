@@ -2,6 +2,7 @@ package com.nnk.springboot.domain;
 
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
@@ -12,9 +13,12 @@ public class CurvePoint {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+    @NotNull(message = "Must not be null")
     private Integer curveId;
     private LocalDateTime asOfDate;
+    @NotNull(message = "Term is mandatory")
     private Double term;
+    @NotNull(message = "Value is mandatory")
     private Double value;
     private LocalDateTime creationDate;
 
@@ -31,8 +35,7 @@ public class CurvePoint {
 
     }
 
-    public CurvePoint(int i, double v, double v1) {
-    }
+    public CurvePoint(int i, double v, double v1) {}
 
 
     public Integer getId() {

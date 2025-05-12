@@ -44,6 +44,10 @@
 
 	<div class="row"><h2>Bid List Screen</h2></div>
 
+	<div th:if="${success}">
+		<div class="alert alert-success" th:text="${success}"></div>
+	</div>
+
 	<div class="row">
 
 		<a th:href="@{/bidList/add}" class="btn-primary btn-sm mb-2">Add New</a>
@@ -69,7 +73,7 @@
 					<td style="width: 15%" class="text-center">
 						<div class="action-buttons">
 							<a th:href="@{/bidList/update/{id}(id=${bidList.bidListId})}" class="edit-btn">Edit</a>
-							<a th:href="@{/bidList/delete/{id}(id=${bidList.bidListId})}" class="delete-btn">Delete</a>
+							<a onclick="return confirm('Are you sure you want to delete this ?')" th:href="@{/bidList/delete/{id}(id=${bidList.bidListId})}" class="delete-btn">Delete</a>
 						</div>
 					</td>
 

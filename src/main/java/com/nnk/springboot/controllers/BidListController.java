@@ -1,6 +1,8 @@
 package com.nnk.springboot.controllers;
 
 import com.nnk.springboot.domain.BidList;
+import com.nnk.springboot.exceptions.AlreadyExistsException;
+import com.nnk.springboot.exceptions.NotFoundException;
 import com.nnk.springboot.service.BidListService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -18,16 +20,18 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @Controller
 @RequestMapping("/bidList")
 public class BidListController {
-    // TODO: Inject Bid service
 
-    @Autowired
     BidListService bidListService;
+
+    public BidListController(BidListService bidListService) {
+        this.bidListService = bidListService;
+    }
 
 
     @RequestMapping("/list")
     public String home(Model model) {
-        // TODO: call service find all bids to show to the view
-        model.addAttribute("bidList", bidListService.findAll());
+
+        model.addAttribute("bidLists", bidListService.findAll());
         return "bidList/list";
     }
 
@@ -39,46 +43,63 @@ public class BidListController {
 
     @PostMapping("/validate")
     public String validate(@Valid BidList bid, BindingResult result, Model model, RedirectAttributes redirectAttributes) {
-        // TODO: check data valid and save to db, after saving return bid list
-        if (result.hasErrors()) {
-           return "bidList/add";
-        }
-        bidListService.save(bid);
-        redirectAttributes.addFlashAttribute("success", "Bid successfully added");
 
-        return "bidList/add";
+        if (result.hasErrors()) {return "bidList/add";}
+
+        try {
+            bidListService.save(bid);
+            redirectAttributes.addFlashAttribute("success", "Bid successfully added");
+        } catch (AlreadyExistsException e) {
+            result.rejectValue("account", "exists", e.getMessage() );
+            return "bidList/add";
+        }
+
+        return "redirect:/bidList/list";
     }
 
     @GetMapping("/update/{id}")
     public String showUpdateForm(@PathVariable("id") Integer id, Model model, RedirectAttributes redirectAttributes) {
-        // TODO: get Bid by Id and to model then show to the form
-        BidList bidList = bidListService.findById(id);
-        IllegalArgumentException exception = new IllegalArgumentException("Invalid bid Id:" + id);
-        model.addAttribute("bidList", bidList);
-        return "bidList/update";
+
+        try {
+            BidList bidList = bidListService.findById(id);
+            model.addAttribute("bidList", bidList);
+            return "bidList/update";
+        } catch (NotFoundException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage() + id);
+        }
+
+        return "redirect:/bidList/list";
     }
 
     @PostMapping("/update/{id}")
     public String updateBid(@PathVariable("id") Integer id, @Valid BidList bidList,
                             BindingResult result, Model model, RedirectAttributes redirectAttributes) {
-        // TODO: check required fields, if valid call service to update Bid and return list Bid
 
-        if (result.hasErrors()) {
+        if (result.hasErrors()) {return "bidList/update";}
+
+        try {
+            bidList.setBidListId(id);
+            bidListService.update(bidList);
+            redirectAttributes.addFlashAttribute("success", "Bid successfully updated");
+            return "redirect:/bidList/list";
+        } catch (AlreadyExistsException e) {
+            result.rejectValue("account", "exists", e.getMessage() );
             return "bidList/update";
+        } catch (NotFoundException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage() + id);
+            return "redirect:/bidList/list";
         }
-        bidList.setBidListId(id);
-        bidListService.save(bidList);
-       redirectAttributes.addFlashAttribute("success", "Bid successfully updated");
-
-        return "redirect:/bidList/list";
     }
 
     @GetMapping("/delete/{id}")
     public String deleteBid(@PathVariable("id") Integer id, Model model, RedirectAttributes redirectAttributes) {
-        // TODO: Find Bid by Id and delete the bid, return to Bid list
 
-        bidListService.deleteById(id);
-        redirectAttributes.addFlashAttribute("success", "Bid successfully deleted");
+        try {
+            bidListService.deleteById(id);
+            redirectAttributes.addFlashAttribute("success", "Bid successfully deleted");
+        } catch (NotFoundException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage() + id);
+        }
 
         return "redirect:/bidList/list";
     }

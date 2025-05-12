@@ -8,7 +8,7 @@ import java.util.List;
 public interface UserService {
 
     List<Users> findAll() throws CustomDataAccessException;
-    Users save(Users user) throws UserAlreadyExistsException, DataPersistException, InvalidUserException;
+    Users save(Users user) throws AlreadyExistsException, DataPersistException, InvalidException;
     Users findById(Integer id);
     void deleteById(Integer id) throws DataDeleteException;
 }

@@ -6,7 +6,7 @@ public final class ErrorCodes {
 
     public static final String NOT_FOUND = "NOT_FOUND";                 // 404
     public static final String DATA_ACCESS_ERROR = "DATA_ACCESS_ERROR";                 // 404
-    public static final String USER_ALREADY_EXISTS = "USER_ALREADY_EXISTS";       // 409
+    public static final String ALREADY_EXISTS = "ALREADY_EXISTS";       // 409
     public static final String INVALID_PASSWORD = "INVALID_PASSWORD";             // 401
     public static final String PASSWORD_MISMATCH = "PASSWORD_MISMATCH";           // 400
     public static final String UNAUTHORIZED_ACCESS = "UNAUTHORIZED_ACCESS";       // 403

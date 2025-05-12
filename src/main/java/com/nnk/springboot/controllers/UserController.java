@@ -2,7 +2,7 @@ package com.nnk.springboot.controllers;
 
 import com.nnk.springboot.domain.Users;
 import com.nnk.springboot.exceptions.DataPersistException;
-import com.nnk.springboot.exceptions.UserAlreadyExistsException;
+import com.nnk.springboot.exceptions.AlreadyExistsException;
 import com.nnk.springboot.service.UserService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -48,7 +48,7 @@ public class UserController {
         try {
             userService.save(user);
             ra.addFlashAttribute("success", "User created");
-        } catch (UserAlreadyExistsException e) {
+        } catch (AlreadyExistsException e) {
             LOGGER.error("Business error {} occurred: {}", e.getErrorCode(), e.getMessage());
             result.rejectValue("username", "duplicate", e.getMessage());
             return "user/add";

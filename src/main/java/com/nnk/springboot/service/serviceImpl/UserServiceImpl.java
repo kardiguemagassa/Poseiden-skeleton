@@ -41,7 +41,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public Users findById(Integer id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException(id));
+                .orElseThrow(() -> new NotFoundException("User" ,id));
     }
 
     @Override
@@ -50,7 +50,7 @@ public class UserServiceImpl implements UserService {
         userRepository.findByUsername(user.getUsername()).ifPresent(existingUser -> {
 
             if (user.getId() == null || !existingUser.getId().equals(user.getId())) {
-                throw new UserAlreadyExistsException(user.getUsername());
+                throw new AlreadyExistsException("User");
             }
         });
 
@@ -67,10 +67,10 @@ public class UserServiceImpl implements UserService {
     public void deleteById(Integer id) throws DataDeleteException {
         try {
             if (!userRepository.existsById(id)) {
-                throw new UserNotFoundException(id);
+                throw new NotFoundException("User" ,id);
             }
             userRepository.deleteById(id);
-        } catch (UserNotFoundException e) {
+        } catch (NotFoundException e) {
             throw e;
         } catch (Exception e) {
             throw new DataDeleteException("Error deleting user", e);

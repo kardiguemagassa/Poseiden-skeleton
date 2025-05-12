@@ -44,6 +44,10 @@
 
 	<div class="row"><h2>Curve Point List</h2></div>
 
+	<div th:if="${success}">
+		<div class="alert alert-success" th:text="${success}"></div>
+	</div>
+
 	<div class="row">
 
 		<a href="/curvePoint/add" class="btn btn-primary btn-sm">Add New</a>
@@ -62,13 +66,15 @@
 			<tbody>
 			<tr th:each="curvePoint : ${curvePoints}">
 				<td style="width: 10%" th:text="${curvePoint.id}"></td>
-				<td th:text="${curvePoint.id}"></td>
+				<td th:text="${curvePoint.curveId}"></td>
 				<td th:text="${curvePoint.term}"></td>
 				<td th:text="${curvePoint.value}"></td>
-
 				<td style="width: 15%" class="text-center">
-					<a th:href="@{/curvePoint/update/{id}(id=${curvePoint.id})}">Edit</a>&nbsp;|&nbsp;
-					<a th:href="@{/curvePoint/delete/{id}(id=${curvePoint.id})}">Delete</a>
+					<div class="action-buttons">
+						<a th:href="@{/curvePoint/update/{id}(id=${curvePoint.id})}" class="edit-btn">Edit</a>
+						<a onclick="return confirm('Are you sure you want to delete this ?')" th:href="@{/curvePoint/delete/{id}(id=${curvePoint.id})}" class="delete-btn">Delete
+						</a>
+					</div>
 				</td>
 
 			</tr>

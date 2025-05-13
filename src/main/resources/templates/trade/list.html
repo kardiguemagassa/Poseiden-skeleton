@@ -44,6 +44,10 @@
 
 	<div class="row"><h2>Trade List</h2></div>
 
+	<div th:if="${success}">
+		<div class="alert alert-success" th:text="${success}"></div>
+	</div>
+
 	<div class="row">
 
 		<a href="/trade/add" class="btn btn-primary btn-sm">Add New</a>
@@ -61,15 +65,15 @@
 
 			<tbody>
 				<tr th:each="trade : ${trades}">
-					<td style="width: 10%" th:text="${trade.id}"></td>
+					<td style="width: 10%" th:text="${trade.tradeId}"></td>
 					<td th:text="${trade.account}"></td>
 					<td th:text="${trade.type}"></td>
 					<td th:text="${trade.buyQuantity}"></td>
 
 					<td style="width: 15%" class="text-center">
 						<div class="action-buttons">
-							<a th:href="@{/trade/update/{id}(id=${trade.id})}" class="edit-btn">Edit</a>
-							<a th:href="@{/trade/delete/{id}(id=${trade.id})}" class="delete-btn">Delete</a>
+							<a th:href="@{/trade/update/{id}(id=${trade.tradeId})}" class="edit-btn">Edit</a>
+							<a onclick="return confirm('Are you sure you want to delete this ?')" th:href="@{/trade/delete/{id}(id=${trade.tradeId})}" class="delete-btn">Delete</a>
 						</div>
 					</td>
 

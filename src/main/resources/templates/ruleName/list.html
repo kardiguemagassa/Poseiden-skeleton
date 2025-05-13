@@ -28,6 +28,7 @@
 			<i class="fa fa-user"></i> Logged in user: <span sec:authentication="name"></span>
 		</a>
 
+		<a th:href="@{/user/list}">User List</a>
 		<a th:href="@{/bidList/list}">Bid List</a>
 		<a th:href="@{/curvePoint/list}">Curve Points</a>
 		<a th:href="@{/rating/list}">Ratings</a>
@@ -43,6 +44,10 @@
 <main class="container">
 
 	<div class="row"><h2>Rule List</h2></div>
+
+	<div th:if="${success}">
+		<div class="alert alert-success" th:text="${success}"></div>
+	</div>
 
 	<div class="row">
 
@@ -69,13 +74,13 @@
 					<td th:text="${ruleName.description}"></td>
 					<td th:text="${ruleName.json}"></td>
 					<td th:text="${ruleName.template}"></td>
-					<td th:text="${ruleName.sql}"></td>
+					<td th:text="${ruleName.sqlPart}"></td>
 					<td th:text="${ruleName.sqlPart}"></td>
 
 					<td style="width: 15%" class="text-center">
 						<div class="action-buttons">
 							<a th:href="@{/ruleName/update/{id}(id=${ruleName.id})}" class="edit-btn">Edit</a>
-							<a th:href="@{/ruleName/delete/{id}(id=${ruleName.id})}" class="delete-btn">Delete</a>
+							<a onclick="return confirm('Are you sure you want to delete this ?')" th:href="@{/ruleName/delete/{id}(id=${ruleName.id})}" class="delete-btn">Delete</a>
 						</div>
 					</td>
 

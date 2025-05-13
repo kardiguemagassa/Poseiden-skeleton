@@ -56,9 +56,9 @@
 			</div>
 
 			<div class="form-group">
-				<label for="sql" class="col-sm-2 control-label">SQL</label>
-				<input type="text" th:field="*{sql}" id="sql" placeholder="SQL">
-				<p class="text-danger" th:if="${#fields.hasErrors('sql')}" th:errors="*{sql}"></p>
+				<label for="sqlStr" class="col-sm-2 control-label">SQL</label>
+				<input type="text" th:field="*{sqlStr}" id="sqlStr" placeholder="SQL">
+				<p class="text-danger" th:if="${#fields.hasErrors('sqlStr')}" th:errors="*{sqlStr}"></p>
 			</div>
 
 			<div class="form-group">
@@ -68,8 +68,8 @@
 			</div>
 
 			<div class="form-group-cancel-update">
-				<a class="btnCancel" href="/rule/list">Cancel</a>
-				<input class="btnCancel" type="submit" value="Add Rule">
+				<a class="btnCancel" href="/ruleName/list">Cancel</a>
+				<input class="btnUpdate" type="submit" value="Add Rule">
 			</div>
 
 		</form>

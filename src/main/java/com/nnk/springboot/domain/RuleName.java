@@ -1,6 +1,7 @@
 package com.nnk.springboot.domain;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 
 @Entity
 @Table(name = "rulename")
@@ -9,11 +10,17 @@ public class RuleName {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+    @NotBlank(message = "Rule Name is mandatory")
     private String name;
+    @NotBlank(message = "Rule Description is mandatory")
     private String description;
+    @NotBlank(message = "Rule JSON is mandatory")
     private String json;
+    @NotBlank(message = "Rule Template is mandatory")
     private String template;
+    @NotBlank(message = "Rule SQL is mandatory")
     private String sqlStr;
+    @NotBlank(message = "Rule SQL Part is mandatory")
     private String sqlPart;
 
     public RuleName() {

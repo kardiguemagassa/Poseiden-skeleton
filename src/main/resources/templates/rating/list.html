@@ -45,6 +45,10 @@
 
 	<div class="row"><h2>Rating List</h2></div>
 
+	<div th:if="${success}">
+		<div class="alert alert-success" th:text="${success}"></div>
+	</div>
+
 	<div class="row">
 		<a href="/rating/add" class="btn btn-primary btn-sm">Add New</a>
 		<table class="table table-bordered">
@@ -64,14 +68,15 @@
 					<td th:text="${rating.moodysRating}"></td>
 					<td th:text="${rating.sandPRating}"></td>
 					<td th:text="${rating.fitchRating}"></td>
-					<td th:text="${rating.order}"></td>
+					<td th:text="${rating.orderNumber}"></td>
 
 					<td style="width: 15%" class="text-center">
 						<div class="action-buttons">
-							<a th:href="@{/rating/update/{id}(id=${rating.id})}" class="edit-btn">Edit</a>&nbsp;|&nbsp;
-							<a th:href="@{/rating/delete/{id}(id=${rating.id})}" class="delete-btn">Delete</a>
+							<a th:href="@{/rating/update/{id}(id=${rating.id})}" class="edit-btn">Edit</a>
+							<a onclick="return confirm('Are you sure you want to delete this ?')" th:href="@{/rating/delete/{id}(id=${rating.id})}" class="delete-btn">Delete</a>
 						</div>
 					</td>
+
 				</tr>
 			</tbody>
 		</table>

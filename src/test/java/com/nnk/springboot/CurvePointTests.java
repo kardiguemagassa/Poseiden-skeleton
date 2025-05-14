@@ -27,23 +27,27 @@ public class CurvePointTests {
 
 	@Test
 	public void curvePointTest() {
-		CurvePoint curvePoint = new CurvePoint(10, 10d, 30d);
+
+		CurvePoint curvePoint = new CurvePoint();
+		curvePoint.setCurveId(10);
+		curvePoint.setTerm(10d);
+		curvePoint.setValue(30d);
 
 		LOGGER.info("CurveId: " + curvePoint.getCurveId());
 
 		// Save
 		curvePoint = curvePointRepository.save(curvePoint);
 		assertNotNull(curvePoint.getId());
-		assertTrue(curvePoint.getCurveId() == 10);
+        assertEquals(10, (int) curvePoint.getCurveId());
 
 		// Update
 		curvePoint.setCurveId(20);
 		curvePoint = curvePointRepository.save(curvePoint);
-		assertTrue(curvePoint.getCurveId() == 20);
+        assertEquals(20, (int) curvePoint.getCurveId());
 
 		// Find
 		List<CurvePoint> listResult = curvePointRepository.findAll();
-		assertTrue(listResult.size() > 0);
+        assertFalse(listResult.isEmpty());
 
 		// Delete
 		Integer id = curvePoint.getId();

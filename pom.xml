@@ -186,6 +186,22 @@
                 <version>3.3.0</version>
             </plugin>
 
+            <!-- [WARNING] Unable to locate Test Source XRef to link to - DISABLED -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jxr-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-xref</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>jxr</goal>
+                            <goal>test-jxr</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
         </plugins>
     </build>

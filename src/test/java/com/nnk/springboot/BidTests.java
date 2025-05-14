@@ -1,14 +1,16 @@
 package com.nnk.springboot;
 
-import com.nnk.springboot.domain.BidList;
 
+
+import com.nnk.springboot.domain.BidList;
 import com.nnk.springboot.repositories.BidListRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.List;
@@ -20,45 +22,38 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 public class BidTests {
 
-	@Autowired
-	private PasswordEncoder passwordEncoder;
-
-	@Test
-	public void printEncodedPassword() {
-		System.out.println("Encoded 'admin123': " + passwordEncoder.encode("admin123"));
-		System.out.println("Encoded 'user123': " + passwordEncoder.encode("user123"));
-	}
-
-	@Test
-	public void verifyAdminPassword() {
-		String rawPassword = "admin123"; // Le mot de passe que vous essayez
-		String storedHash = "$2a$10$4MH6YUArhKqL6H1YpjEI7uHo2JhWW00ZET0I.qMAiPqdJwheIH3bG";
-
-		boolean matches = passwordEncoder.matches(rawPassword, storedHash);
-		assertTrue(matches);
-		System.out.println("Password matches: " + matches);
-	}
+	private final Logger LOGGER = LoggerFactory.getLogger(BidTests.class);
 
 	@Autowired
 	private BidListRepository bidListRepository;
 
 	@Test
 	public void bidListTest() {
-		BidList bid = new BidList("Account Test", "Type Test", 10d);
+
+
+		BidList bid = new BidList();
+		bid.setAccount("Account Test");
+		bid.setType("Type Test");
+		bid.setBidQuantity(10d);
+
+		LOGGER.info("Account: " + bid.getAccount());
+		LOGGER.info("Type: " + bid.getType());
+		LOGGER.info("BidQuantity: " + bid.getBidQuantity());
+
 
 		// Save
 		bid = bidListRepository.save(bid);
 		assertNotNull(bid.getBidListId());
-		assertEquals(bid.getBidQuantity(), 10d, 10d);
+		assertEquals(10d, bid.getBidQuantity(), 10d);
 
 		// Update
 		bid.setBidQuantity(20d);
 		bid = bidListRepository.save(bid);
-		assertEquals(bid.getBidQuantity(), 20d, 20d);
+		assertEquals(20d, bid.getBidQuantity(), 20d);
 
 		// Find
 		List<BidList> listResult = bidListRepository.findAll();
-		assertTrue(listResult.size() > 0);
+        assertFalse(listResult.isEmpty());
 
 		// Delete
 		Integer id = bid.getBidListId();

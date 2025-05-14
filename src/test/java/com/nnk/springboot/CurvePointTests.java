@@ -4,6 +4,8 @@ import com.nnk.springboot.domain.CurvePoint;
 import com.nnk.springboot.repositories.CurvePointRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -18,12 +20,16 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 public class CurvePointTests {
 
+	private final Logger LOGGER = LoggerFactory.getLogger(CurvePointTests.class);
+
 	@Autowired
 	private CurvePointRepository curvePointRepository;
 
 	@Test
 	public void curvePointTest() {
 		CurvePoint curvePoint = new CurvePoint(10, 10d, 30d);
+
+		LOGGER.info("CurveId: " + curvePoint.getCurveId());
 
 		// Save
 		curvePoint = curvePointRepository.save(curvePoint);

@@ -5,6 +5,8 @@ import com.nnk.springboot.repositories.RatingRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -18,26 +20,36 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 public class RatingTests {
 
+	private final Logger LOGGER = LoggerFactory.getLogger(RatingTests.class);
+
 	@Autowired
 	private RatingRepository ratingRepository;
 
 	@Test
 	public void ratingTest() {
-		Rating rating = new Rating("Moodys Rating", "Sand PRating", "Fitch Rating", 10);
+
+		Rating rating = new Rating();
+		rating.setMoodysRating("Moodys Rating");
+		rating.setSandPRating("SandP Rating");
+		rating.setFitchRating("Fitch Rating");
+		rating.setOrderNumber(10);
+
+		LOGGER.info(rating.getMoodysRating());
+
 
 		// Save
 		rating = ratingRepository.save(rating);
 		assertNotNull(rating.getId());
-		assertTrue(rating.getOrderNumber() == 10);
+        assertEquals(10, (int) rating.getOrderNumber());
 
 		// Update
 		rating.setOrderNumber(20);
 		rating = ratingRepository.save(rating);
-		assertTrue(rating.getOrderNumber() == 20);
+        assertEquals(20, (int) rating.getOrderNumber());
 
 		// Find
 		List<Rating> listResult = ratingRepository.findAll();
-		assertTrue(listResult.size() > 0);
+        assertFalse(listResult.isEmpty());
 
 		// Delete
 		Integer id = rating.getId();

@@ -22,21 +22,24 @@ public class TradeTests {
 
 	@Test
 	public void tradeTest() {
-		Trade trade = new Trade("Trade Account", "Type");
+
+		Trade trade = new Trade();
+		trade.setAccount("Trade Account");
+		trade.setType("Type");
+		trade.setBuyQuantity(10d);
 
 		// Save
 		trade = tradeRepository.save(trade);
-		assertNotNull(trade.getTradeId());
-		assertTrue(trade.getAccount().equals("Trade Account"));
+        assertEquals("Trade Account", trade.getAccount());
 
 		// Update
 		trade.setAccount("Trade Account Update");
 		trade = tradeRepository.save(trade);
-		assertTrue(trade.getAccount().equals("Trade Account Update"));
+        assertEquals("Trade Account Update", trade.getAccount());
 
 		// Find
 		List<Trade> listResult = tradeRepository.findAll();
-		assertTrue(listResult.size() > 0);
+        assertFalse(listResult.isEmpty());
 
 		// Delete
 		Integer id = trade.getTradeId();

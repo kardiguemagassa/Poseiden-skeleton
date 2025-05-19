@@ -42,9 +42,6 @@ public class BidListServiceImplTest {
 
         LOGGER.info("Setting up BidListServiceImplTest");
 
-        // Initialisation des mocks
-        MockitoAnnotations.openMocks(this);
-
         bid = new BidList();
         bid.setBidListId(1);
         bid.setAccount("TestAccount");

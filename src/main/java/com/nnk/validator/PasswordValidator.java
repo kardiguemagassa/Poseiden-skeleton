@@ -3,8 +3,6 @@ package com.nnk.validator;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
-
-
 public class PasswordValidator implements ConstraintValidator<ValidPassword, String> {
 
     @Override

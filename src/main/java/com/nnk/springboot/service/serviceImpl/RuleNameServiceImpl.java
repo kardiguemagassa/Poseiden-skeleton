@@ -70,22 +70,4 @@ public class RuleNameServiceImpl {
         ruleNameRepository.deleteById(id);
         LOGGER.info("RuleName deleted successfully" + id);
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }

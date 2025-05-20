@@ -94,5 +94,4 @@ public class BidListServiceImpl implements BidListService {
         target.setBidQuantity(source.getBidQuantity());
         target.setType(source.getType());
     }
-
 }

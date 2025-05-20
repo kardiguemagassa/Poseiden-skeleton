@@ -35,5 +35,4 @@ public class LoginController {
 
         return "error/403";
     }
-
 }

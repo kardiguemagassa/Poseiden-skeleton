@@ -2,7 +2,6 @@ package com.nnk.springboot.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.http.HttpStatus;
-
 import java.time.LocalDateTime;
 
 public class ErrorResponse {
@@ -18,14 +17,6 @@ public class ErrorResponse {
 
     public ErrorResponse() {
         this.timestamp = LocalDateTime.now();
-    }
-
-    public ErrorResponse(String message, HttpStatus status, String details) {
-        this.timestamp = LocalDateTime.now();
-        this.message = message;
-        this.status = status;
-        this.details = details;
-        this.reference = "ERR-" + System.currentTimeMillis();
     }
 
     public LocalDateTime getTimestamp() {

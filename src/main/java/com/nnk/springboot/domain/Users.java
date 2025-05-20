@@ -2,7 +2,6 @@ package com.nnk.springboot.domain;
 
 import com.nnk.validator.ValidPassword;
 import jakarta.persistence.*;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
 

@@ -45,11 +45,11 @@ public class RatingController {
        try {
            ratingService.save(rating);
            redirectAttributes.addFlashAttribute("success", "Rating added successfully");
+           return "redirect:/rating/list";
        } catch (AlreadyExistsException e) {
-           result.rejectValue("value", "exists", e.getMessage());
+           result.rejectValue("moodysRating", "exists", e.getMessage());
            return "rating/add";
        }
-        return "redirect:/rating/list";
     }
 
     @GetMapping("/update/{id}")
@@ -78,10 +78,10 @@ public class RatingController {
             redirectAttributes.addFlashAttribute("success", "Rating successfully updated");
             return "redirect:/rating/list";
         } catch (AlreadyExistsException e) {
-            result.rejectValue("value", "exists", e.getMessage() );
+            result.rejectValue("moodysRating", "exists", e.getMessage() );
             return "rating/update";
         } catch (NotFoundException e) {
-           result.rejectValue("error", e.getMessage() + id);
+           redirectAttributes.addFlashAttribute("error", e.getMessage() + id);
             return "redirect:/rating/list";
         }
 

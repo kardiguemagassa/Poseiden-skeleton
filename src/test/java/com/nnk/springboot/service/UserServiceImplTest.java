@@ -4,6 +4,7 @@ import com.nnk.springboot.domain.Users;
 import com.nnk.springboot.exceptions.*;
 import com.nnk.springboot.repositories.UserRepository;
 import com.nnk.springboot.service.serviceImpl.UserServiceImpl;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -110,6 +111,33 @@ public class UserServiceImplTest {
         assertThatThrownBy(() -> userService.save(user))
                 .isInstanceOf(DataPersistException.class)
                 .hasMessageContaining("Error saving user");
+    }
+
+    @Test
+    void save_ShouldPass_WhenUserWithSameUsernameAndSameIdExists() {
+        // Given
+        Users existingUser = new Users();
+        existingUser.setId(1);
+        existingUser.setUsername("johndoe");
+
+        Users updatingUser = new Users();
+        updatingUser.setId(1);
+        updatingUser.setUsername("johndoe");
+        updatingUser.setPassword("password123");
+
+        Mockito.when(userRepository.findByUsername("johndoe"))
+                .thenReturn(Optional.of(existingUser));
+        Mockito.when(passwordEncoder.encode("password123"))
+                .thenReturn("encodedPassword");
+        Mockito.when(userRepository.save(any(Users.class)))
+                .thenReturn(updatingUser);
+
+        // When
+        Users result = userService.save(updatingUser);
+
+        // Then
+        Assertions.assertEquals(updatingUser, result);
+        Mockito.verify(userRepository).save(updatingUser);
     }
 
     @Test

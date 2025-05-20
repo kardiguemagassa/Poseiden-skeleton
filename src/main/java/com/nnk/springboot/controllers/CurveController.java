@@ -50,7 +50,7 @@ public class CurveController {
             result.rejectValue("value", "exists", e.getMessage());
             return "curvePoint/add";
         }
-        curvePointService.save(curvePoint);
+
         return "redirect:/curvePoint/list";
     }
 
@@ -82,7 +82,7 @@ public class CurveController {
             result.rejectValue("value", "exists", e.getMessage() );
             return "curvePoint/update";
         } catch (NotFoundException e) {
-           result.rejectValue("error", e.getMessage() + id);
+           redirectAttributes.addFlashAttribute("error", e.getMessage() + id);
             return "redirect:/curvePoint/list";
         }
 

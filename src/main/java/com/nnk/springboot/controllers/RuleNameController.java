@@ -75,14 +75,16 @@ public class RuleNameController {
             ruleName.setId(id);
             ruleNameService.update(ruleName);
             redirectAttributes.addFlashAttribute("success", "RuleName successfully updated");
+            return "redirect:/ruleName/list";
         } catch (AlreadyExistsException e) {
             result.rejectValue("name", "exists", e.getMessage() );
             return "ruleName/update";
         } catch (NotFoundException e) {
-           result.rejectValue("error", e.getMessage() + id);
+           redirectAttributes.addFlashAttribute("error", e.getMessage() + id);
+            return "redirect:/ruleName/list";
         }
 
-        return "redirect:/ruleName/list";
+
     }
 
     @GetMapping("/delete/{id}")

@@ -1,9 +1,7 @@
 package com.nnk.springboot.domain;
 
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -24,15 +22,6 @@ public class CurvePoint {
 
     public CurvePoint() {
         super();
-    }
-
-    public CurvePoint( Integer curveId, LocalDateTime asOfDate, Double term, Double value, LocalDateTime creationDate) {
-        this.curveId = curveId;
-        this.asOfDate = asOfDate;
-        this.term = term;
-        this.value = value;
-        this.creationDate = creationDate;
-
     }
 
     public CurvePoint(int i, double v, double v1) {}

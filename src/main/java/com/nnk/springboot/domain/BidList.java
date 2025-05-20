@@ -3,7 +3,6 @@ package com.nnk.springboot.domain;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -38,37 +37,7 @@ public class BidList {
     private String side;
 
 
-    public BidList() {
-
-    }
-
-    public BidList (String account, String type, Double bidQuantity, Double askQuantity, Double bid, Double ask,
-                    String benchmark, LocalDateTime bidListDate, String commentary, String security, String status,
-                    String trader, String book, String creationName, LocalDateTime creationDate, String revisionName,
-                    LocalDateTime revisionDate, String dealName, String dealType, String sourceListId, String side) {
-        this.account = account;
-        this.type = type;
-        this.bidQuantity = bidQuantity;
-        this.askQuantity = askQuantity;
-        this.bid = bid;
-        this.ask = ask;
-        this.benchmark = benchmark;
-        this.bidListDate = bidListDate;
-        this.commentary = commentary;
-        this.security = security;
-        this.status = status;
-        this.trader = trader;
-        this.book = book;
-        this.creationName = creationName;
-        this.creationDate = creationDate;
-        this.revisionName = revisionName;
-        this.revisionDate = revisionDate;
-        this.dealName = dealName;
-        this.dealType = dealType;
-        this.sourceListId = sourceListId;
-        this.side = side;
-
-    }
+    public BidList() {}
 
 
     public BidList(String accountTest, String typeTest, double v) {

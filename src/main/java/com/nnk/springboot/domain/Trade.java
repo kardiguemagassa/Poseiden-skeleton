@@ -3,7 +3,6 @@ package com.nnk.springboot.domain;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-
 import java.time.LocalDateTime;
 
 
@@ -39,38 +38,6 @@ public class Trade {
     private String side;
 
     public Trade() {}
-
-
-    public Trade(String account, String type, Double buyQuantity, Double sellQuantity, Double buyPrice, Double sellPrice,
-                 LocalDateTime tradeDate, String security, String status, String trader, String benchmark, String book,
-                 String creationName, LocalDateTime creationDate, String revisionName, LocalDateTime revisionDate,
-                 String dealName, String dealType, String sourceListId, String side) {
-        this.account = account;
-        this.type = type;
-        this.buyQuantity = buyQuantity;
-        this.sellQuantity = sellQuantity;
-        this.buyPrice = buyPrice;
-        this.sellPrice = sellPrice;
-        this.tradeDate = tradeDate;
-        this.security = security;
-        this.status = status;
-        this.trader = trader;
-        this.benchmark = benchmark;
-        this.book = book;
-        this.creationName = creationName;
-        this.creationDate = creationDate;
-        this.revisionName = revisionName;
-        this.revisionDate = revisionDate;
-        this.dealName = dealName;
-        this.dealType = dealType;
-        this.sourceListId = sourceListId;
-        this.side = side;
-
-    }
-
-    public Trade(String tradeAccount, String type) {
-    }
-
 
     public int getTradeId() {
         return tradeId;

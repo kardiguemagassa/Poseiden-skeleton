@@ -80,7 +80,7 @@ public class TradeController {
             result.rejectValue("account", "exists", e.getMessage() );
             return "trade/update";
         } catch (NotFoundException e) {
-            result.rejectValue("error", e.getMessage() + id);
+            redirectAttributes.addFlashAttribute("error", e.getMessage() + id);
             return "redirect:/trade/list";
         }
     }

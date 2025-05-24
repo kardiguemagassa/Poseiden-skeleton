@@ -7,6 +7,7 @@ import com.nnk.springboot.repositories.TradeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
@@ -19,6 +20,7 @@ public class TradeServiceImpl {
         this.tradeRepository = tradeRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<Trade> findAll() {
         try {
             return tradeRepository.findAll();
@@ -28,10 +30,12 @@ public class TradeServiceImpl {
         }
     }
 
+    @Transactional(readOnly = true)
     public Trade findById(Integer id) {
         return tradeRepository.findById(id).orElseThrow(() -> new NotFoundException("Trade not found", id));
     }
 
+    @Transactional
     public void save(Trade trade) {
         try {
             tradeRepository.save(trade);
@@ -42,6 +46,7 @@ public class TradeServiceImpl {
         }
     }
 
+    @Transactional
     public void update(Trade trade) {
 
         if (!tradeRepository.existsById(trade.getTradeId())) {
@@ -64,6 +69,7 @@ public class TradeServiceImpl {
         }
     }
 
+    @Transactional
     public void deleteById(Integer id) {
 
         if (!tradeRepository.existsById(id)) {

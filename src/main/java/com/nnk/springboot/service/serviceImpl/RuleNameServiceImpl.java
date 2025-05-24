@@ -5,7 +5,7 @@ import com.nnk.springboot.exceptions.CustomDataAccessException;
 import com.nnk.springboot.exceptions.NotFoundException;
 import com.nnk.springboot.repositories.RuleNameRepository;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -20,6 +20,7 @@ public class RuleNameServiceImpl {
         this.ruleNameRepository = ruleNameRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<RuleName> findAll() {
        try {
            return ruleNameRepository.findAll();
@@ -29,11 +30,13 @@ public class RuleNameServiceImpl {
        }
     }
 
+    @Transactional(readOnly = true)
     public RuleName findById(Integer id) {
         LOGGER.info("Retrieving RuleName with id: " + id);
         return ruleNameRepository.findById(id).orElseThrow(() -> new NotFoundException("RuleName not found", id));
     }
 
+    @Transactional
     public void save(RuleName ruleName) {
 
         try {
@@ -44,6 +47,7 @@ public class RuleNameServiceImpl {
         }
     }
 
+    @Transactional
     public void update(RuleName ruleName) {
 
         if (!ruleNameRepository.existsById(ruleName.getId())) {
@@ -62,6 +66,7 @@ public class RuleNameServiceImpl {
         ruleNameRepository.save(existingRuleName);
     }
 
+    @Transactional
     public void deleteById(Integer id) {
 
         if (!ruleNameRepository.existsById(id)) {

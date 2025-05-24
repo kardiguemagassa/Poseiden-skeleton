@@ -7,6 +7,7 @@ import com.nnk.springboot.repositories.RatingRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
@@ -19,6 +20,7 @@ public class RatingServiceImpl {
         this.ratingRepository = ratingRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<Rating> findAll() {
 
         try {
@@ -29,10 +31,12 @@ public class RatingServiceImpl {
         }
     }
 
+    @Transactional(readOnly = true)
     public Rating findById(Integer id) {
         return ratingRepository.findById(id).orElseThrow(() -> new NotFoundException("Rating not found", id));
     }
 
+    @Transactional
     public void save(Rating rating) {
 
         try {
@@ -44,6 +48,7 @@ public class RatingServiceImpl {
         }
     }
 
+    @Transactional
     public void update(Rating rating) {
 
         if (!ratingRepository.existsById(rating.getId())) {
@@ -68,6 +73,7 @@ public class RatingServiceImpl {
         }
     }
 
+    @Transactional
     public void deleteById(Integer id) {
         if (!ratingRepository.existsById(id)) {
             LOGGER.error("Rating with id {} not found", id);

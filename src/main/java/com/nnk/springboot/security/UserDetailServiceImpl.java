@@ -1,4 +1,4 @@
-package com.nnk.springboot.service.serviceImpl;
+package com.nnk.springboot.security;
 
 import com.nnk.springboot.domain.Users;
 import com.nnk.springboot.repositories.UserRepository;
@@ -11,6 +11,14 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
+/**
+ * Custom implementation of {@link UserDetailsService} used by Spring Security.
+ *
+ * <p>
+ *     This class allows you to load a user from the database based on their username.
+ *     and provide the information necessary for authentication and authorization.
+ * </p>
+ */
 @Service
 public class UserDetailServiceImpl implements UserDetailsService {
 
@@ -18,10 +26,23 @@ public class UserDetailServiceImpl implements UserDetailsService {
 
     private final UserRepository userRepository;
 
+    /**
+     * Constructor injecting the user repository.
+     *
+     * @param userRepository the repository to access the entities {@link Users}
+     */
     public UserDetailServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
+    /**
+     * Loads a user by their username.
+     * <p>This method is automatically called by Spring Security during the login process.</p>
+     *
+     * @param username the username
+     * @return the user's details, including password and roles
+     * @throws UsernameNotFoundException if no matching user is found
+     */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         LOGGER.info("Trying to load user: {}", username);

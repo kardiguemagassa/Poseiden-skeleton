@@ -7,7 +7,7 @@ import com.nnk.springboot.repositories.CurvePointRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -22,6 +22,7 @@ public class CurvePointServiceImpl {
         this.curvePointRepository = curvePointRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<CurvePoint> findAll() {
         try {
             return curvePointRepository.findAll();
@@ -30,10 +31,12 @@ public class CurvePointServiceImpl {
         }
     }
 
+    @Transactional(readOnly = true)
     public CurvePoint findById(Integer id) {
         return curvePointRepository.findById(id).orElseThrow(() -> new NotFoundException("CurvePoint not found", id));
     }
 
+    @Transactional
     public void save(CurvePoint curvePoint) {
 
         try {
@@ -45,6 +48,7 @@ public class CurvePointServiceImpl {
         }
     }
 
+    @Transactional
     public void update(CurvePoint curvePoint) {
 
         if (!curvePointRepository.existsById(curvePoint.getId())) {
@@ -68,6 +72,7 @@ public class CurvePointServiceImpl {
         }
     }
 
+    @Transactional
     public void deleteById(Integer id) {
         if (!curvePointRepository.existsById(id)) {
             throw new NotFoundException("CurvePoint", id);

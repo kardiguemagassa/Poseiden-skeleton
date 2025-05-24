@@ -9,6 +9,7 @@ import com.nnk.springboot.service.BidListService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,6 +25,7 @@ public class BidListServiceImpl implements BidListService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<BidList> findAll() {
 
         try {
@@ -42,11 +44,13 @@ public class BidListServiceImpl implements BidListService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public BidList findById(Integer id) {
         return bidListRepository.findById(id).orElseThrow(() -> new NotFoundException("BidList", id));
     }
 
     @Override
+    @Transactional
     public void save(BidList bidList) {
         checkDuplicateAccount(bidList);
         bidListRepository.save(bidList);
@@ -54,6 +58,7 @@ public class BidListServiceImpl implements BidListService {
     }
 
     @Override
+    @Transactional
     public void update(BidList bidList) {
 
         BidList existingBid = bidListRepository.findById(bidList.getBidListId()).orElseThrow(()
@@ -67,6 +72,7 @@ public class BidListServiceImpl implements BidListService {
     }
 
     @Override
+    @Transactional
     public void deleteById(Integer id) {
 
         if (!bidListRepository.existsById(id)) {

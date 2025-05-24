@@ -41,6 +41,9 @@ public class BidList {
 
 
     public BidList(String accountTest, String typeTest, double v) {
+        this.account = accountTest;
+        this.type = typeTest;
+        this.bidQuantity = v;
     }
 
     public Integer getBidListId() {

@@ -1,4 +1,4 @@
-package com.nnk.springboot.config;
+package com.nnk.springboot.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +12,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
+/**
+ * Main Spring Security configuration.
+ * This class defines access rules, protected URLs,
+ * login/logout behavior, role management and configuration
+ * components necessary for security (encoder, user service, etc.).
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -20,12 +26,27 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
     private final AuthenticationSuccessHandler authenticationSuccessHandler;
 
+    /**
+     * Constructor injecting the dependencies necessary for the security configuration.
+     *
+     * @param userDetailsService the service to load a user's details
+     * @param authenticationSuccessHandler custom handler to redirect after authentication success
+     */
     public SecurityConfig(UserDetailsService userDetailsService,
                           AuthenticationSuccessHandler authenticationSuccessHandler) {
         this.userDetailsService = userDetailsService;
         this.authenticationSuccessHandler = authenticationSuccessHandler;
     }
 
+    /**
+     * Sets the main Spring Security security filter.
+     * Configure endpoint access rules, login form,
+     * exception handling, and user service.
+     *
+     * @param http the HTTP security configuration object
+     * @return the constructed instance of {@link SecurityFilterChain}
+     * @throws Exception on configuration error
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -65,6 +86,11 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Provides a password encoder based on the BCrypt algorithm.
+     *
+     * @return an instance of {@link BCryptPasswordEncoder}
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

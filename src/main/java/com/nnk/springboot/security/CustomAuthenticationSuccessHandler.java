@@ -1,4 +1,4 @@
-package com.nnk.springboot.config;
+package com.nnk.springboot.security;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,9 +10,27 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+/**
+ * Custom successful authentication handler.
+ * <p>
+ *     This class is triggered after successful authentication via Spring Security.
+ *     It redirects users to a specific page based on their roles.
+ * </p>
+ */
 @Component
 public class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
+    /**
+     * Method called automatically after successful authentication.
+     * Redirects the user based on their role: currently all users are redirected
+     * to "/user/list" whether their role is USER or ADMIN (the frontend handles the rest).
+     *
+     * @param request the incoming HTTP request
+     * @param response the HTTP response
+     * @param authentication the authentication object containing the logged in user's information
+     * @throws IOException if an input/output error occurs
+     * @throws ServletException if a servlet error occurs
+     */
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {

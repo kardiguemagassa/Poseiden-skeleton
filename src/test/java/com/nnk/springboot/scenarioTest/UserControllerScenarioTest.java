@@ -1,6 +1,6 @@
 package com.nnk.springboot.scenarioTest;
 
-import com.nnk.springboot.config.SecurityConfig;
+import com.nnk.springboot.security.SecurityConfig;
 import com.nnk.springboot.domain.Users;
 import com.nnk.springboot.repositories.UserRepository;
 import jakarta.transaction.Transactional;

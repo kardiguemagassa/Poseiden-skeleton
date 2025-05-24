@@ -3,7 +3,7 @@ package com.nnk.springboot.service;
 
 import com.nnk.springboot.domain.Users;
 import com.nnk.springboot.repositories.UserRepository;
-import com.nnk.springboot.service.serviceImpl.UserDetailServiceImpl;
+import com.nnk.springboot.security.UserDetailServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

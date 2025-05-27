@@ -143,7 +143,7 @@ public class RuleNameControllerTest {
                         .param("json", "json")
                         .param("template", "template")
                         .param("sqlStr", "sqlStr")
-                        .param("sqlPart", "sqlPart") // N'oublie pas celui-ci !
+                        .param("sqlPart", "sqlPart")
                         .with(csrf()))
                 .andExpect(status().isOk()) // renvoie la vue "ruleName/update" donc 200 OK
                 .andExpect(view().name("ruleName/update"))

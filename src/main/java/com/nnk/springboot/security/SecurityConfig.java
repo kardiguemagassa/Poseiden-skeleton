@@ -67,7 +67,7 @@ public class SecurityConfig {
                 .formLogin(form -> form
                         .loginPage("/app/login")
                         .loginProcessingUrl("/login")
-                        .successHandler(authenticationSuccessHandler)
+                        .successHandler(authenticationSuccessHandler) // Rediriger utilisateur selon son role après une connexion réussie.
                         .failureUrl("/app/login?error=true")
                         .permitAll()
                 )
@@ -81,7 +81,7 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex
                         .accessDeniedPage("/app/access-denied")
                 )
-                .userDetailsService(userDetailsService);
+                .userDetailsService(userDetailsService); // charger un utilisateur depuis la BDD
 
         return http.build();
     }

@@ -3,7 +3,7 @@ package com.nnk.springboot.scenarioTest;
 import com.nnk.springboot.security.SecurityConfig;
 import com.nnk.springboot.domain.Users;
 import com.nnk.springboot.repositories.UserRepository;
-import jakarta.transaction.Transactional;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.*;
@@ -146,7 +147,7 @@ public class UserControllerScenarioTest {
 
     @Test
     void deleteUserScenario_success() throws Exception {
-        // 1. Création d'un utilisateur
+
         Users user = new Users();
         user.setUsername("todelete");
         user.setPassword(passwordEncoder.encode("Pass123!")); // Encodage ajouté

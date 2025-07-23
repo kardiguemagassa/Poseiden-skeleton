@@ -40,11 +40,12 @@ pipeline {
     stage('SonarQube Analysis') {
 			steps {
 				withSonarQubeEnv('SonarQube') {
+					sh 'echo "Sonar Host URL: $SONAR_HOST_URL"'
 					sh """
             mvn sonar:sonar \
               -Dsonar.projectKey=Poseidon-skeleton \
-              -Dsonar.host.url=${env.SONAR_HOST_URL} \
-              -Dsonar.login=${SONAR_TOKEN} \
+              -Dsonar.host.url=$SONAR_HOST_URL \
+              -Dsonar.token=$SONAR_TOKEN \
               -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
           """
         }
@@ -53,7 +54,7 @@ pipeline {
 
     stage('Quality Gate') {
 			steps {
-				timeout(time: 20, unit: 'MINUTES') {
+				timeout(time: 2, unit: 'MINUTES') {
 					waitForQualityGate abortPipeline: true
         }
       }

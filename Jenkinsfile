@@ -3,7 +3,7 @@ pipeline {
 
   tools {
 		maven 'M3'
-    jdk 'JDK-21'
+    	jdk 'JDK-21'
   }
 
   environment {
@@ -53,15 +53,15 @@ pipeline {
 
     stage('Quality Gate') {
 			steps {
-				timeout(time: 5, unit: 'MINUTES') {
+				timeout(time: 10, unit: 'MINUTES') {
 					waitForQualityGate abortPipeline: true
         }
       }
     }
   }
-// squ_555f098b3f5662a543b27bfe23cf825606c92329
+
   post {
-		success { echo '✅ Build, couverture et qualité OK !' }
-    failure { echo '❌ Échec, vérifier les logs et SonarQube.' }
+		success { echo 'Build, couverture et qualité OK !' }
+    failure { echo 'Échec, vérifier les logs et SonarQube.' }
   }
 }

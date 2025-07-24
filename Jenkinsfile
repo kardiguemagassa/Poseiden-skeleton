@@ -78,15 +78,44 @@ node {
             }
         }
 
+        stage('Docker Availability Check') {
+            script {
+                try {
+                    sh 'docker --version'
+                    echo "Docker est disponible"
+                } catch (Exception e) {
+                    echo "ATTENTION: Docker n'est pas installé ou accessible sur cet agent Jenkins"
+                    echo "Les étapes Docker seront ignorées"
+                    env.DOCKER_AVAILABLE = "false"
+                    currentBuild.result = 'UNSTABLE'
+                    return
+                }
+                env.DOCKER_AVAILABLE = "true"
+            }
+        }
+
         stage("Image Prune") {
-            imagePrune(CONTAINER_NAME)
+            when {
+                expression { env.DOCKER_AVAILABLE == "true" }
+            }
+            script {
+                imagePrune(CONTAINER_NAME)
+            }
         }
 
         stage('Image Build') {
-            imageBuild(CONTAINER_NAME, CONTAINER_TAG)
+            when {
+                expression { env.DOCKER_AVAILABLE == "true" }
+            }
+            script {
+                imageBuild(CONTAINER_NAME, CONTAINER_TAG)
+            }
         }
 
         stage('Push to Docker Registry') {
+            when {
+                expression { env.DOCKER_AVAILABLE == "true" }
+            }
             script {
                 try {
                     withCredentials([usernamePassword(credentialsId: 'dockerhubcredentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
@@ -102,6 +131,9 @@ node {
         }
 
         stage('Run App') {
+            when {
+                expression { env.DOCKER_AVAILABLE == "true" }
+            }
             script {
                 // Vérifier si les credentials Docker Hub existent
                 try {
@@ -122,8 +154,14 @@ node {
             script {
                 if (currentBuild.result == null || currentBuild.result == 'SUCCESS') {
                     echo 'Build, couverture et qualité OK !'
+                    if (env.DOCKER_AVAILABLE != "true") {
+                        echo 'Note: Les étapes Docker ont été ignorées (Docker non disponible)'
+                    }
                 } else if (currentBuild.result == 'UNSTABLE') {
                     echo 'Build terminé avec des avertissements. Vérifiez les logs.'
+                    if (env.DOCKER_AVAILABLE != "true") {
+                        echo 'Avertissement: Docker n\'est pas disponible sur cet agent Jenkins'
+                    }
                 } else {
                     echo 'Échec, vérifier les logs et SonarQube.'
                 }

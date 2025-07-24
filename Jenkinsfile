@@ -29,6 +29,7 @@ node {
                 echo "Branch: ${env.BRANCH_NAME}"
                 echo "Environment: ${ENV_NAME}"
                 echo "HTTP Port: ${HTTP_PORT}"
+                echo "Container: ${CONTAINER_NAME}:${CONTAINER_TAG}"
             }
         }
 
@@ -38,7 +39,7 @@ node {
             sh 'echo "MAVEN_HOME: $MAVEN_HOME"'
             sh 'echo "PATH: $PATH"'
             sh 'mvn --version'
-            // Exécution du build avec Maven
+            // Exécution du build avec Maven (une seule commande suffit)
             sh "mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install"
         }
 
@@ -77,6 +78,29 @@ node {
             }
         }
 
+        stage("Image Prune") {
+            imagePrune(CONTAINER_NAME)
+        }
+
+        stage('Image Build') {
+            imageBuild(CONTAINER_NAME, CONTAINER_TAG)
+        }
+
+        stage('Push to Docker Registry') {
+            script {
+                try {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhubcredentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        pushToImage(CONTAINER_NAME, CONTAINER_TAG, USERNAME, PASSWORD)
+                    }
+                } catch (Exception e) {
+                    echo "ATTENTION: Credentials 'dockerhubcredentials' non trouvés. Push vers Docker Hub ignoré."
+                    echo "Erreur: ${e.getMessage()}"
+                    echo "Veuillez créer les credentials Docker Hub avec l'ID 'dockerhubcredentials' dans Jenkins."
+                    currentBuild.result = 'UNSTABLE'
+                }
+            }
+        }
+
         stage('Run App') {
             script {
                 // Vérifier si les credentials Docker Hub existent
@@ -85,10 +109,10 @@ node {
                         runApp(CONTAINER_NAME, CONTAINER_TAG, USERNAME, HTTP_PORT, ENV_NAME)
                     }
                 } catch (Exception e) {
-                    echo "ATTENTION: Credentials 'dockerhubcredentials' non trouvés. Étape Run App ignorée."
+                    echo "ATTENTION: Impossible de démarrer l'application."
                     echo "Erreur: ${e.getMessage()}"
-                    echo "Veuillez créer les credentials Docker Hub avec l'ID 'dockerhubcredentials' dans Jenkins."
-                    // Ne pas faire échouer le pipeline pour cette étape
+                    echo "Vérifiez que l'image a été correctement construite et pushée."
+                    currentBuild.result = 'UNSTABLE'
                 }
             }
         }
@@ -98,6 +122,8 @@ node {
             script {
                 if (currentBuild.result == null || currentBuild.result == 'SUCCESS') {
                     echo 'Build, couverture et qualité OK !'
+                } else if (currentBuild.result == 'UNSTABLE') {
+                    echo 'Build terminé avec des avertissements. Vérifiez les logs.'
                 } else {
                     echo 'Échec, vérifier les logs et SonarQube.'
                 }
@@ -120,6 +146,68 @@ def sendEmail(recipients) {
         subject: "Build ${env.BUILD_NUMBER} - ${currentBuild.currentResult} - (${currentBuild.fullDisplayName})",
         body: "Check console output at: ${env.BUILD_URL}/console" + "\n"
     )
+}
+
+def imagePrune(containerName) {
+    try {
+        sh "docker image prune -f"
+        sh "docker stop ${containerName} || true"
+        sh "docker rm ${containerName} || true"
+    } catch (Exception e) {
+        echo "Nettoyage des images/conteneurs: ${e.getMessage()}"
+    }
+}
+
+def imageBuild(containerName, tag) {
+    try {
+        sh "docker build -t ${containerName}:${tag} --pull --no-cache ."
+        echo "Construction de l'image terminée: ${containerName}:${tag}"
+    } catch (Exception e) {
+        echo "Erreur lors de la construction de l'image: ${e.getMessage()}"
+        throw e
+    }
+}
+
+def pushToImage(containerName, tag, dockerUser, dockerPassword) {
+    try {
+        sh "docker login -u ${dockerUser} -p ${dockerPassword}"
+        sh "docker tag ${containerName}:${tag} ${dockerUser}/${containerName}:${tag}"
+        sh "docker push ${dockerUser}/${containerName}:${tag}"
+        echo "Push de l'image terminé: ${dockerUser}/${containerName}:${tag}"
+    } catch (Exception e) {
+        echo "Erreur lors du push de l'image: ${e.getMessage()}"
+        throw e
+    } finally {
+        // Nettoyage des credentials Docker
+        sh "docker logout || true"
+    }
+}
+
+def runApp(containerName, tag, dockerHubUser, httpPort, envName) {
+    try {
+        // Arrêter et supprimer le conteneur existant s'il existe
+        sh "docker stop ${containerName} || true"
+        sh "docker rm ${containerName} || true"
+
+        // Tirer la dernière image
+        sh "docker pull ${dockerHubUser}/${containerName}:${tag}"
+
+        // Démarrer le nouveau conteneur
+        sh "docker run --env SPRING_PROFILES_ACTIVE=${envName} -d -p ${httpPort}:${httpPort} --name ${containerName} ${dockerHubUser}/${containerName}:${tag}"
+
+        echo "Application démarrée sur le port: ${httpPort} (http)"
+        echo "Profil Spring actif: ${envName}"
+
+        // Vérifier que le conteneur fonctionne
+        sleep(time: 10, unit: 'SECONDS')
+        sh "docker ps | grep ${containerName}"
+
+    } catch (Exception e) {
+        echo "Erreur lors du démarrage de l'application: ${e.getMessage()}"
+        // Afficher les logs du conteneur pour le debug
+        sh "docker logs ${containerName} || true"
+        throw e
+    }
 }
 
 String getEnvName(String branchName) {

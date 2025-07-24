@@ -1,3 +1,6 @@
+// Définir EMAIL_RECIPIENTS en dehors du bloc try pour qu'il soit accessible partout
+def EMAIL_RECIPIENTS = "magassakara@gmail.com"
+
 node {
     try {
         // Définir les outils au début du pipeline
@@ -7,7 +10,6 @@ node {
         def ENV_NAME = getEnvName(env.BRANCH_NAME)
         def CONTAINER_NAME = "poseidon-app"
         def CONTAINER_TAG = getTag(env.BUILD_NUMBER, env.BRANCH_NAME)
-        def EMAIL_RECIPIENTS = "magassakara@gmail.com"
 
         // Définir les variables d'environnement
         env.JAVA_HOME = jdkHome
@@ -76,8 +78,18 @@ node {
         }
 
         stage('Run App') {
-            withCredentials([usernamePassword(credentialsId: 'dockerhubcredentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                runApp(CONTAINER_NAME, CONTAINER_TAG, USERNAME, HTTP_PORT, ENV_NAME)
+            script {
+                // Vérifier si les credentials Docker Hub existent
+                try {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhubcredentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        runApp(CONTAINER_NAME, CONTAINER_TAG, USERNAME, HTTP_PORT, ENV_NAME)
+                    }
+                } catch (Exception e) {
+                    echo "ATTENTION: Credentials 'dockerhubcredentials' non trouvés. Étape Run App ignorée."
+                    echo "Erreur: ${e.getMessage()}"
+                    echo "Veuillez créer les credentials Docker Hub avec l'ID 'dockerhubcredentials' dans Jenkins."
+                    // Ne pas faire échouer le pipeline pour cette étape
+                }
             }
         }
 

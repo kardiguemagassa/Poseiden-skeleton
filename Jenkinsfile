@@ -48,13 +48,13 @@ node {
         // Exécution de l'analyse SonarQube
         withSonarQubeEnv('SonarQube') {
             withCredentials([string(credentialsId: 'sonartoken', variable: 'SONAR_TOKEN')]) {
-                sh """
+                sh '''
                     mvn sonar:sonar \
                       -Dsonar.projectKey=Poseidon-skeleton \
                       -Dsonar.host.url=$SONAR_HOST_URL \
                       -Dsonar.token=${SONAR_TOKEN} \
                       -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-                """
+                '''
             }
         }
     }

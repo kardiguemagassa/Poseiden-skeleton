@@ -2,41 +2,36 @@ def EMAIL_RECIPIENTS = "magassakara@gmail.com"
 
 node {
     try {
-        // 1. Initialisation des variables avec valeurs par défaut sécurisées
+        // 1. Initialisation des variables
         def BRANCH_NAME = env.BRANCH_NAME ?: sh(
             script: 'git rev-parse --abbrev-ref HEAD || echo "unknown"',
             returnStdout: true
         ).trim()
-
         def BUILD_NUMBER = env.BUILD_NUMBER ?: currentBuild.number ?: "0"
         def CONTAINER_NAME = "poseidon-app"
-        def DOCKER_REGISTRY = "docker.io" // Peut être modifié pour un registry privé
+        def DOCKER_REGISTRY = "docker.io"
 
-        // 2. Configuration des outils avec gestion d'erreur
+        // 2. Configuration outils
         def mavenHome = tool name: 'M3', type: 'maven'
         def jdkHome = tool name: 'JDK-21', type: 'jdk'
 
-        // 3. Détection Docker améliorée pour macOS/Linux
         def dockerHome = '/usr/local/bin'
         env.DOCKER_AVAILABLE = sh(
             script: 'which docker && docker --version >/dev/null 2>&1 && echo "true" || echo "false"',
             returnStdout: true
         ).trim() == "true" ? "true" : "false"
 
-        // 4. Configuration de l'environnement
         env.JAVA_HOME = jdkHome
         env.MAVEN_HOME = mavenHome
         env.PATH = "${dockerHome}:${mavenHome}/bin:${jdkHome}/bin:${env.PATH}"
-        env.DOCKER_BUILDKIT = "1" // Activation de BuildKit
+        env.DOCKER_BUILDKIT = "1"
 
-        // 5. Variables dérivées
         def HTTP_PORT = getHTTPPort(BRANCH_NAME)
         def ENV_NAME = getEnvName(BRANCH_NAME)
         def CONTAINER_TAG = getTag(BUILD_NUMBER, BRANCH_NAME)
 
         stage('Checkout') {
             checkout scm
-            // Vérification supplémentaire du nom de branche
             BRANCH_NAME = sh(
                 script: 'git rev-parse --abbrev-ref HEAD || echo "unknown"',
                 returnStdout: true
@@ -56,10 +51,8 @@ node {
             • Port: ${HTTP_PORT}
             • Tag: ${CONTAINER_TAG}
             """
-
             sh 'mvn --version'
             sh 'java -version'
-
             if (env.DOCKER_AVAILABLE == "true") {
                 sh 'docker --version'
                 sh 'docker info'
@@ -97,81 +90,63 @@ node {
         }
 
         stage('Docker Operations') {
-            steps {
-                script {
-                    // Vérification que le fichier JAR existe
-                    def jarFiles = findFiles(glob: 'target/*.jar')
-                    if (jarFiles.isEmpty()) {
-                        error "Aucun fichier JAR trouvé dans target/"
-                    }
-                    def jarFile = jarFiles[0].path
+            script {
+                def jarFiles = findFiles(glob: 'target/*.jar')
+                if (jarFiles.isEmpty()) {
+                    error "Aucun fichier JAR trouvé dans target/"
+                }
+                def jarFile = jarFiles[0].path
 
-                    if (env.DOCKER_AVAILABLE == "true") {
-                        try {
-                            // Construction de l'image Docker
+                if (env.DOCKER_AVAILABLE == "true") {
+                    try {
+                        sh """
+                            docker build \
+                                --pull \
+                                --no-cache \
+                                --build-arg JAR_FILE=${jarFile} \
+                                -t ${CONTAINER_NAME}:${CONTAINER_TAG} .
+                        """
+                        withCredentials([usernamePassword(
+                            credentialsId: 'dockerhub-credentials',
+                            usernameVariable: 'DOCKER_USER',
+                            passwordVariable: 'DOCKER_PASSWORD'
+                        )]) {
                             sh """
-                                docker build \
-                                    --pull \
-                                    --no-cache \
-                                    --build-arg JAR_FILE=${jarFile} \
-                                    -t ${CONTAINER_NAME}:${CONTAINER_TAG} \
-                                    .
+                                echo "\${DOCKER_PASSWORD}" | docker login -u "\${DOCKER_USER}" --password-stdin ${DOCKER_REGISTRY}
+                                docker tag ${CONTAINER_NAME}:${CONTAINER_TAG} \${DOCKER_USER}/${CONTAINER_NAME}:${CONTAINER_TAG}
+                                docker push \${DOCKER_USER}/${CONTAINER_NAME}:${CONTAINER_TAG}
                             """
-
-                            // Push vers le registry
-                            withCredentials([usernamePassword(
-                                credentialsId: 'dockerhub-credentials',
-                                usernameVariable: 'DOCKER_USER',
-                                passwordVariable: 'DOCKER_PASSWORD'
-                            )]) {
+                            if (BRANCH_NAME == 'master') {
                                 sh """
-                                    echo "\${DOCKER_PASSWORD}" | docker login -u "\${DOCKER_USER}" --password-stdin ${DOCKER_REGISTRY}
-                                    docker tag ${CONTAINER_NAME}:${CONTAINER_TAG} \${DOCKER_USER}/${CONTAINER_NAME}:${CONTAINER_TAG}
-                                    docker push \${DOCKER_USER}/${CONTAINER_NAME}:${CONTAINER_TAG}
+                                    docker tag ${CONTAINER_NAME}:${CONTAINER_TAG} \${DOCKER_USER}/${CONTAINER_NAME}:latest
+                                    docker push \${DOCKER_USER}/${CONTAINER_NAME}:latest
                                 """
-
-                                // Tag 'latest' pour la branche master
-                                if (BRANCH_NAME == 'master') {
-                                    sh """
-                                        docker tag ${CONTAINER_NAME}:${CONTAINER_TAG} \${DOCKER_USER}/${CONTAINER_NAME}:latest
-                                        docker push \${DOCKER_USER}/${CONTAINER_NAME}:latest
-                                    """
-                                }
-                                sh "docker logout ${DOCKER_REGISTRY}"
                             }
-                        } catch (Exception e) {
-                            error "Erreur Docker: ${e.getMessage()}"
+                            sh "docker logout ${DOCKER_REGISTRY}"
                         }
-                    } else {
-                        echo "Avertissement: Docker non disponible - étapes Docker ignorées"
-                        currentBuild.result = 'UNSTABLE'
+                    } catch (Exception e) {
+                        error "Erreur Docker: ${e.getMessage()}"
                     }
+                } else {
+                    echo "Avertissement: Docker non disponible - étapes Docker ignorées"
+                    currentBuild.result = 'UNSTABLE'
                 }
             }
         }
 
         stage('Deploy') {
-            when {
-                expression {
-                    env.DOCKER_AVAILABLE == "true" &&
-                    (BRANCH_NAME == 'master' || BRANCH_NAME == 'develop')
-                }
-            }
-            steps {
-                script {
+            script {
+                if (env.DOCKER_AVAILABLE == "true" && (BRANCH_NAME == 'master' || BRANCH_NAME == 'develop')) {
                     try {
                         withCredentials([usernamePassword(
                             credentialsId: 'dockerhub-credentials',
                             usernameVariable: 'DOCKER_USER',
                             passwordVariable: 'DOCKER_PASSWORD'
                         )]) {
-                            // Arrêt et suppression des anciens conteneurs
                             sh """
                                 docker stop ${CONTAINER_NAME} || true
                                 docker rm ${CONTAINER_NAME} || true
                             """
-
-                            // Démarrer le nouveau conteneur
                             sh """
                                 docker run -d \
                                     --name ${CONTAINER_NAME} \
@@ -179,14 +154,11 @@ node {
                                     -e SPRING_PROFILES_ACTIVE=${ENV_NAME} \
                                     \${DOCKER_USER}/${CONTAINER_NAME}:${CONTAINER_TAG}
                             """
-
-                            // Vérification du statut
                             sleep(time: 10, unit: 'SECONDS')
                             def status = sh(
                                 script: "docker inspect -f '{{.State.Status}}' ${CONTAINER_NAME}",
                                 returnStdout: true
                             ).trim()
-
                             if (status != "running") {
                                 error "Le conteneur n'est pas en état 'running' (statut: ${status})"
                             }
@@ -194,6 +166,8 @@ node {
                     } catch (Exception e) {
                         error "Échec du déploiement: ${e.getMessage()}"
                     }
+                } else {
+                    echo "Déploiement ignoré : Docker non dispo ou branche non autorisée"
                 }
             }
         }
@@ -203,7 +177,6 @@ node {
         echo "ERREUR CRITIQUE: ${e.getMessage()}"
         error "Échec du pipeline"
     } finally {
-        // Nettoyage sécurisé
         try {
             deleteDir()
         } catch (Exception e) {
@@ -213,7 +186,7 @@ node {
     }
 }
 
-// Fonctions utilitaires améliorées
+// Fonctions utilitaires
 def sendEmail(recipients) {
     try {
         def subject = "[Jenkins] ${env.JOB_NAME} - Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}"
@@ -223,13 +196,10 @@ def sendEmail(recipients) {
             Build: #${env.BUILD_NUMBER}
             Branche: ${env.BRANCH_NAME ?: 'N/A'}
             Durée: ${currentBuild.durationString.replace(' and counting', '')}
-
             Détails: ${env.BUILD_URL}console
             Docker: ${env.DOCKER_AVAILABLE == "true" ? "Disponible" : "Indisponible"}
-
             Cause: ${currentBuild.getBuildCauses().collect{ it.toString() }.join(', ')}
         """
-
         mail(
             to: recipients,
             subject: subject,
@@ -260,7 +230,6 @@ String getTag(String buildNumber, String branchName) {
     def safeBranch = (branchName ?: "unknown")
         .replaceAll('[^a-zA-Z0-9-]', '-')
         .toLowerCase()
-
     return (safeBranch == 'master') ?
         "${buildNumber}-stable" :
         "${buildNumber}-${safeBranch}-snapshot"

@@ -83,68 +83,71 @@ node {
                 try {
                     sh 'docker --version'
                     echo "Docker est disponible"
+                    env.DOCKER_AVAILABLE = "true"
                 } catch (Exception e) {
                     echo "ATTENTION: Docker n'est pas installé ou accessible sur cet agent Jenkins"
                     echo "Les étapes Docker seront ignorées"
                     env.DOCKER_AVAILABLE = "false"
                     currentBuild.result = 'UNSTABLE'
-                    return
                 }
-                env.DOCKER_AVAILABLE = "true"
             }
         }
 
         stage("Image Prune") {
-            when {
-                expression { env.DOCKER_AVAILABLE == "true" }
-            }
             script {
-                imagePrune(CONTAINER_NAME)
+                if (env.DOCKER_AVAILABLE == "true") {
+                    imagePrune(CONTAINER_NAME)
+                } else {
+                    echo "Étape Image Prune ignorée - Docker non disponible"
+                }
             }
         }
 
         stage('Image Build') {
-            when {
-                expression { env.DOCKER_AVAILABLE == "true" }
-            }
             script {
-                imageBuild(CONTAINER_NAME, CONTAINER_TAG)
+                if (env.DOCKER_AVAILABLE == "true") {
+                    imageBuild(CONTAINER_NAME, CONTAINER_TAG)
+                } else {
+                    echo "Étape Image Build ignorée - Docker non disponible"
+                }
             }
         }
 
         stage('Push to Docker Registry') {
-            when {
-                expression { env.DOCKER_AVAILABLE == "true" }
-            }
             script {
-                try {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhubcredentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                        pushToImage(CONTAINER_NAME, CONTAINER_TAG, USERNAME, PASSWORD)
+                if (env.DOCKER_AVAILABLE == "true") {
+                    try {
+                        withCredentials([usernamePassword(credentialsId: 'dockerhubcredentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                            pushToImage(CONTAINER_NAME, CONTAINER_TAG, USERNAME, PASSWORD)
+                        }
+                    } catch (Exception e) {
+                        echo "ATTENTION: Credentials 'dockerhubcredentials' non trouvés. Push vers Docker Hub ignoré."
+                        echo "Erreur: ${e.getMessage()}"
+                        echo "Veuillez créer les credentials Docker Hub avec l'ID 'dockerhubcredentials' dans Jenkins."
+                        currentBuild.result = 'UNSTABLE'
                     }
-                } catch (Exception e) {
-                    echo "ATTENTION: Credentials 'dockerhubcredentials' non trouvés. Push vers Docker Hub ignoré."
-                    echo "Erreur: ${e.getMessage()}"
-                    echo "Veuillez créer les credentials Docker Hub avec l'ID 'dockerhubcredentials' dans Jenkins."
-                    currentBuild.result = 'UNSTABLE'
+                } else {
+                    echo "Étape Push to Docker Registry ignorée - Docker non disponible"
                 }
             }
         }
 
         stage('Run App') {
-            when {
-                expression { env.DOCKER_AVAILABLE == "true" }
-            }
             script {
-                // Vérifier si les credentials Docker Hub existent
-                try {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhubcredentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                        runApp(CONTAINER_NAME, CONTAINER_TAG, USERNAME, HTTP_PORT, ENV_NAME)
+                if (env.DOCKER_AVAILABLE == "true") {
+                    // Vérifier si les credentials Docker Hub existent
+                    try {
+                        withCredentials([usernamePassword(credentialsId: 'dockerhubcredentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                            runApp(CONTAINER_NAME, CONTAINER_TAG, USERNAME, HTTP_PORT, ENV_NAME)
+                        }
+                    } catch (Exception e) {
+                        echo "ATTENTION: Impossible de démarrer l'application."
+                        echo "Erreur: ${e.getMessage()}"
+                        echo "Vérifiez que l'image a été correctement construite et pushée."
+                        currentBuild.result = 'UNSTABLE'
                     }
-                } catch (Exception e) {
-                    echo "ATTENTION: Impossible de démarrer l'application."
-                    echo "Erreur: ${e.getMessage()}"
-                    echo "Vérifiez que l'image a été correctement construite et pushée."
-                    currentBuild.result = 'UNSTABLE'
+                } else {
+                    echo "Étape Run App ignorée - Docker non disponible"
                 }
             }
         }

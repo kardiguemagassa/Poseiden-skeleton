@@ -3,25 +3,50 @@ def EMAIL_RECIPIENTS = "magassakara@gmail.com"
 
 node {
     try {
-        // Définir les outils au début du pipeline
-        def dockerHome = tool name: 'docker', type: 'docker'
+        // Configuration des outils avec fallback
         def mavenHome = tool name: 'M3', type: 'maven'
         def jdkHome = tool name: 'JDK-21', type: 'jdk'
-        def HTTP_PORT = getHTTPPort(env.BRANCH_NAME)
-        def ENV_NAME = getEnvName(env.BRANCH_NAME)
-        def CONTAINER_NAME = "poseidon-app"
-        def CONTAINER_TAG = getTag(env.BUILD_NUMBER, env.BRANCH_NAME)
-        def DOCKER_REGISTRY = "docker.io" // Modifier si vous utilisez un registry privé
 
-        // Définir les variables d'environnement
-        env.JAVA_HOME = jdkHome
-        env.PATH = "${dockerHome}/bin:${mavenHome}/bin:${jdkHome}/bin:${env.PATH}"
-        env.MAVEN_HOME = mavenHome
-        env.DOCKER_BUILDKIT = "1" // Activer BuildKit pour des builds plus rapides
+        // Tentative de configuration Docker avec gestion d'erreur
+        def dockerHome = null
+        try {
+            dockerHome = tool name: 'docker', type: 'docker'
+            env.PATH = "${dockerHome}/bin:${mavenHome}/bin:${jdkHome}/bin:${env.PATH}"
+            env.DOCKER_AVAILABLE = "true"
+            } catch (Exception e) {
+                    echo "ATTENTION: Docker n'est pas configuré dans Jenkins"
+                    env.DOCKER_AVAILABLE = "false"
+                    env.PATH = "${mavenHome}/bin:${jdkHome}/bin:${env.PATH}"
+                }
+
+                def HTTP_PORT = getHTTPPort(env.BRANCH_NAME)
+                def ENV_NAME = getEnvName(env.BRANCH_NAME)
+                def CONTAINER_NAME = "poseidon-app"
+                def CONTAINER_TAG = getTag(env.BUILD_NUMBER, env.BRANCH_NAME)
+
+                // Configuration Java/Maven
+                env.JAVA_HOME = jdkHome
+                env.MAVEN_HOME = mavenHome
 
         stage('Checkout') {
             checkout scm
         }
+
+        stage('Environment Setup') {
+                    script {
+                        echo "MAVEN_HOME: ${mavenHome}"
+                        echo "JAVA_HOME: ${jdkHome}"
+                        echo "Docker disponible: ${env.DOCKER_AVAILABLE}"
+                        echo "Branch: ${env.BRANCH_NAME}"
+
+                        sh 'mvn --version'
+                        sh 'java -version'
+
+                        if (env.DOCKER_AVAILABLE == "true") {
+                            sh 'docker --version'
+                        }
+                    }
+                }
 
         stage('Environment Setup') {
             script {

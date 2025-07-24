@@ -2,20 +2,20 @@ def EMAIL_RECIPIENTS = "magassakara@gmail.com"
 
 node {
     try {
-        // 1. Initialisation des variables
+        // Initialisation
         def BRANCH_NAME = env.BRANCH_NAME ?: sh(
             script: 'git rev-parse --abbrev-ref HEAD || echo "unknown"',
             returnStdout: true
         ).trim()
+
         def BUILD_NUMBER = env.BUILD_NUMBER ?: currentBuild.number ?: "0"
         def CONTAINER_NAME = "poseidon-app"
         def DOCKER_REGISTRY = "docker.io"
 
-        // 2. Configuration outils
         def mavenHome = tool name: 'M3', type: 'maven'
         def jdkHome = tool name: 'JDK-21', type: 'jdk'
-
         def dockerHome = '/usr/local/bin'
+
         env.DOCKER_AVAILABLE = sh(
             script: 'which docker && docker --version >/dev/null 2>&1 && echo "true" || echo "false"',
             returnStdout: true
@@ -32,17 +32,14 @@ node {
 
         stage('Checkout') {
             checkout scm
-            BRANCH_NAME = sh(
-                script: 'git rev-parse --abbrev-ref HEAD || echo "unknown"',
-                returnStdout: true
-            ).trim()
+            BRANCH_NAME = sh(script: 'git rev-parse --abbrev-ref HEAD || echo "unknown"', returnStdout: true).trim()
             echo "Nom de branche confirmé: ${BRANCH_NAME}"
         }
 
         stage('Environment Setup') {
             echo """
             [Configuration Environnement]
-            • Build Number: ${BUILD_NUMBER}
+            • Build #: ${BUILD_NUMBER}
             • Branch: ${BRANCH_NAME}
             • Java: ${jdkHome}
             • Maven: ${mavenHome}
@@ -51,8 +48,10 @@ node {
             • Port: ${HTTP_PORT}
             • Tag: ${CONTAINER_TAG}
             """
+
             sh 'mvn --version'
             sh 'java -version'
+
             if (env.DOCKER_AVAILABLE == "true") {
                 sh 'docker --version'
                 sh 'docker info'
@@ -91,10 +90,11 @@ node {
 
         stage('Docker Operations') {
             script {
-                def jarFiles = findFiles(glob: 'target/*.jar')
-                if (jarFiles.isEmpty()) {
+                def jarFiles = findFiles(glob: 'target/*.jar').findAll { it.name.endsWith('.jar') }
+                if (jarFiles.length == 0) {
                     error "Aucun fichier JAR trouvé dans target/"
                 }
+
                 def jarFile = jarFiles[0].path
 
                 if (env.DOCKER_AVAILABLE == "true") {
@@ -104,8 +104,10 @@ node {
                                 --pull \
                                 --no-cache \
                                 --build-arg JAR_FILE=${jarFile} \
-                                -t ${CONTAINER_NAME}:${CONTAINER_TAG} .
+                                -t ${CONTAINER_NAME}:${CONTAINER_TAG} \
+                                .
                         """
+
                         withCredentials([usernamePassword(
                             credentialsId: 'dockerhub-credentials',
                             usernameVariable: 'DOCKER_USER',
@@ -116,6 +118,7 @@ node {
                                 docker tag ${CONTAINER_NAME}:${CONTAINER_TAG} \${DOCKER_USER}/${CONTAINER_NAME}:${CONTAINER_TAG}
                                 docker push \${DOCKER_USER}/${CONTAINER_NAME}:${CONTAINER_TAG}
                             """
+
                             if (BRANCH_NAME == 'master') {
                                 sh """
                                     docker tag ${CONTAINER_NAME}:${CONTAINER_TAG} \${DOCKER_USER}/${CONTAINER_NAME}:latest
@@ -128,25 +131,30 @@ node {
                         error "Erreur Docker: ${e.getMessage()}"
                     }
                 } else {
-                    echo "Avertissement: Docker non disponible - étapes Docker ignorées"
+                    echo "Docker non disponible - étapes Docker ignorées"
                     currentBuild.result = 'UNSTABLE'
                 }
             }
         }
 
         stage('Deploy') {
-            script {
-                if (env.DOCKER_AVAILABLE == "true" && (BRANCH_NAME == 'master' || BRANCH_NAME == 'develop')) {
+            when {
+                expression {
+                    env.DOCKER_AVAILABLE == "true" &&
+                    (BRANCH_NAME == 'master' || BRANCH_NAME == 'develop')
+                }
+            }
+            steps {
+                script {
                     try {
                         withCredentials([usernamePassword(
                             credentialsId: 'dockerhub-credentials',
                             usernameVariable: 'DOCKER_USER',
                             passwordVariable: 'DOCKER_PASSWORD'
                         )]) {
-                            sh """
-                                docker stop ${CONTAINER_NAME} || true
-                                docker rm ${CONTAINER_NAME} || true
-                            """
+                            sh "docker stop ${CONTAINER_NAME} || true"
+                            sh "docker rm ${CONTAINER_NAME} || true"
+
                             sh """
                                 docker run -d \
                                     --name ${CONTAINER_NAME} \
@@ -154,20 +162,21 @@ node {
                                     -e SPRING_PROFILES_ACTIVE=${ENV_NAME} \
                                     \${DOCKER_USER}/${CONTAINER_NAME}:${CONTAINER_TAG}
                             """
+
                             sleep(time: 10, unit: 'SECONDS')
+
                             def status = sh(
                                 script: "docker inspect -f '{{.State.Status}}' ${CONTAINER_NAME}",
                                 returnStdout: true
                             ).trim()
+
                             if (status != "running") {
-                                error "Le conteneur n'est pas en état 'running' (statut: ${status})"
+                                error "Le conteneur n'est pas 'running' (statut: ${status})"
                             }
                         }
                     } catch (Exception e) {
                         error "Échec du déploiement: ${e.getMessage()}"
                     }
-                } else {
-                    echo "Déploiement ignoré : Docker non dispo ou branche non autorisée"
                 }
             }
         }
@@ -187,31 +196,28 @@ node {
 }
 
 // Fonctions utilitaires
+
 def sendEmail(recipients) {
     try {
         def subject = "[Jenkins] ${env.JOB_NAME} - Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}"
         def body = """
-            Résultat: ${currentBuild.currentResult}
-            Projet: ${env.JOB_NAME}
-            Build: #${env.BUILD_NUMBER}
-            Branche: ${env.BRANCH_NAME ?: 'N/A'}
-            Durée: ${currentBuild.durationString.replace(' and counting', '')}
-            Détails: ${env.BUILD_URL}console
-            Docker: ${env.DOCKER_AVAILABLE == "true" ? "Disponible" : "Indisponible"}
-            Cause: ${currentBuild.getBuildCauses().collect{ it.toString() }.join(', ')}
+        Résultat: ${currentBuild.currentResult}
+        Projet: ${env.JOB_NAME}
+        Build: #${env.BUILD_NUMBER}
+        Branche: ${env.BRANCH_NAME ?: 'N/A'}
+        Durée: ${currentBuild.durationString.replace(' and counting', '')}
+        Détails: ${env.BUILD_URL}console
+        Docker: ${env.DOCKER_AVAILABLE == "true" ? "Disponible" : "Indisponible"}
+        Cause: ${currentBuild.getBuildCauses().collect { it.shortDescription }.join(', ')}
         """
-        mail(
-            to: recipients,
-            subject: subject,
-            body: body
-        )
+        mail(to: recipients, subject: subject, body: body)
     } catch (Exception e) {
         echo "Échec de l'envoi d'email: ${e.getMessage()}"
     }
 }
 
 String getEnvName(String branchName) {
-    switch(branchName?.toLowerCase()) {
+    switch (branchName?.toLowerCase()) {
         case 'master': return 'prod'
         case 'develop': return 'uat'
         default: return 'dev'
@@ -219,7 +225,7 @@ String getEnvName(String branchName) {
 }
 
 String getHTTPPort(String branchName) {
-    switch(branchName?.toLowerCase()) {
+    switch (branchName?.toLowerCase()) {
         case 'master': return '9003'
         case 'develop': return '9002'
         default: return '9001'

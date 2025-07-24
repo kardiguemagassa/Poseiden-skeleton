@@ -1,24 +1,24 @@
 node {
     stage('Checkout') {
-        git url: 'https://github.com/kardiguemagassa/Poseiden-skeleton.git', branch: 'master'
+        // Vérification de la branche et du commit
+        checkout scm
     }
 
     stage('Build & Test') {
-        steps {
-            // Définition des outils Maven et Java via 'tool'
-            MAVEN_HOME = tool name: 'M3', type: 'Maven'
-            JDK_HOME = tool name: 'JDK-21', type: 'JDK'
-            
-            // Vérification des outils
-            sh 'echo "JAVA_HOME: $JAVA_HOME"'
-            sh 'echo "MAVEN_HOME: $MAVEN_HOME"'
-            
-            // Build avec Maven
-            sh "${MAVEN_HOME}/bin/mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install"
-        }
+        // Définir les outils Maven et Java via 'tool'
+        MAVEN_HOME = tool name: 'M3', type: 'Maven'
+        JDK_HOME = tool name: 'JDK-21', type: 'JDK'
+
+        // Affichage des variables d'environnement pour le diagnostic
+        sh 'echo "JAVA_HOME: $JAVA_HOME"'
+        sh 'echo "MAVEN_HOME: $MAVEN_HOME"'
+
+        // Exécution du build avec Maven
+        sh "${MAVEN_HOME}/bin/mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install"
     }
 
     stage('Coverage Report') {
+        // Enregistrement du rapport de couverture avec JaCoCo
         recordCoverage(
             tools: [[parser: 'JACOCO']],
             id: 'jacoco',
@@ -31,6 +31,7 @@ node {
     }
 
     stage('SonarQube Analysis') {
+        // Exécution de l'analyse SonarQube
         withSonarQubeEnv('SonarQube') {
             withCredentials([string(credentialsId: 'sonartoken', variable: 'SONAR_TOKEN')]) {
                 sh """
@@ -45,12 +46,14 @@ node {
     }
 
     stage('Quality Gate') {
+        // Vérification du quality gate
         timeout(time: 2, unit: 'MINUTES') {
             waitForQualityGate abortPipeline: true
         }
     }
 
     stage('Résultat') {
+        // Affichage du résultat du build
         script {
             if (currentBuild.result == null || currentBuild.result == 'SUCCESS') {
                 echo '✔️ Build, couverture et qualité OK !'

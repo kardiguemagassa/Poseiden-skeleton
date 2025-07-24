@@ -1,12 +1,11 @@
 node {
-    // Définir les outils au début du node
-    def MAVEN_HOME = tool name: 'M3', type: 'maven'
-    def JAVA_HOME = tool name: 'JDK-21', type: 'jdk'
+    // Définir les outils au début du pipeline
+    def mavenHome = tool name: 'M3', type: 'maven'  // Notez le 'maven' en minuscules
+    def jdkHome = tool name: 'JDK-21', type: 'jdk'  // Notez le 'jdk' en minuscules
 
-    // Configurer l'environnement PATH
-    env.PATH = "${MAVEN_HOME}/bin:${JAVA_HOME}/bin:${env.PATH}"
-    env.JAVA_HOME = JAVA_HOME
-    env.MAVEN_HOME = MAVEN_HOME
+    // Définir les variables d'environnement
+    env.JAVA_HOME = jdkHome
+    env.PATH = "${mavenHome}/bin:${jdkHome}/bin:${env.PATH}"
 
     stage('Checkout') {
         // Vérification de la branche et du commit
@@ -14,25 +13,24 @@ node {
     }
 
     stage('Check Maven') {
-        // Supprimer le bloc 'steps' - pas nécessaire en syntaxe scriptée
         script {
             // Affiche l'emplacement de Maven
-            echo "MAVEN_HOME is: ${MAVEN_HOME}"
-            sh 'mvn --version'  // Test pour vérifier que Maven fonctionne
+            echo "MAVEN_HOME is: ${mavenHome}"
         }
     }
 
     stage('Build & Test') {
-        // Les outils sont déjà définis au début
-
         // Affichage des variables d'environnement pour le diagnostic
         sh 'echo "JAVA_HOME: $JAVA_HOME"'
         sh 'echo "MAVEN_HOME: $MAVEN_HOME"'
+        sh 'echo "PATH: $PATH"'
+        sh 'mvn --version'
 
-        // Exécution du build avec Maven (utiliser directement mvn)
+        // Exécution du build avec Maven
         sh "mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install"
     }
 
+    // Les autres étapes restent identiques...
     stage('Coverage Report') {
         // Enregistrement du rapport de couverture avec JaCoCo
         recordCoverage(

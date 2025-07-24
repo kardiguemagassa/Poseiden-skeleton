@@ -1,31 +1,32 @@
-pipeline {
-	agent any
+node {
+  agent any
 
   tools {
-		maven 'M3'
-    	jdk 'JDK-21'
+    maven 'M3'
+    jdk 'JDK-21'
   }
 
   environment {
-		SONAR_TOKEN = credentials('sonartoken')
+    SONAR_TOKEN = credentials('sonartoken')
   }
 
   stages {
-		stage('Checkout') {
-			steps {
-				git url: 'https://github.com/kardiguemagassa/Poseiden-skeleton.git', branch: 'master'
+
+    stage('Checkout') {
+      steps {
+        git url: 'https://github.com/kardiguemagassa/Poseiden-skeleton.git', branch: 'master'
       }
     }
 
     stage('Build & Test') {
-			steps {
-				sh 'mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install'
+      steps {
+        sh 'mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install'
       }
     }
 
     stage('Coverage Report') {
-			steps {
-				recordCoverage(
+      steps {
+        recordCoverage(
           tools: [[parser: 'JACOCO']],
           id: 'jacoco',
           sourceCodeRetention: 'EVERY_BUILD',
@@ -38,10 +39,10 @@ pipeline {
     }
 
     stage('SonarQube Analysis') {
-			steps {
-				withSonarQubeEnv('SonarQube') {
-					sh 'echo "Sonar Host URL: $SONAR_HOST_URL"'
-					sh """
+      steps {
+        withSonarQubeEnv('SonarQube') {
+          sh 'echo "Sonar Host URL: $SONAR_HOST_URL"'
+          sh """
             mvn sonar:sonar \
               -Dsonar.projectKey=Poseidon-skeleton \
               -Dsonar.host.url=$SONAR_HOST_URL \
@@ -49,18 +50,27 @@ pipeline {
               -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
           """
         }
+      }
+    }
 
     stage('Quality Gate') {
-			steps {
-				timeout(time: 2, unit: 'MINUTES') {
-					waitForQualityGate abortPipeline: true
+      steps {
+        timeout(time: 2, unit: 'MINUTES') {
+          waitForQualityGate abortPipeline: true
         }
       }
     }
   }
 
   post {
-		success { echo 'Build, couverture et qualité OK !' }
-    failure { echo 'Échec, vérifier les logs et SonarQube.' }
+    always {
+      script {
+        if (currentBuild.result == null || currentBuild.result == 'SUCCESS') {
+          echo 'Build, couverture et qualité OK !'
+        } else {
+          echo 'Échec, vérifier les logs et SonarQube.'
+        }
+      }
+    }
   }
 }

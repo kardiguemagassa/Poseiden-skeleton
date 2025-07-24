@@ -4,47 +4,47 @@ def EMAIL_RECIPIENTS = "magassakara@gmail.com"
 node {
     try {
         // Définir les outils au début du pipeline
+        def dockerHome = tool name: 'docker', type: 'docker'
         def mavenHome = tool name: 'M3', type: 'maven'
         def jdkHome = tool name: 'JDK-21', type: 'jdk'
         def HTTP_PORT = getHTTPPort(env.BRANCH_NAME)
         def ENV_NAME = getEnvName(env.BRANCH_NAME)
         def CONTAINER_NAME = "poseidon-app"
         def CONTAINER_TAG = getTag(env.BUILD_NUMBER, env.BRANCH_NAME)
+        def DOCKER_REGISTRY = "docker.io" // Modifier si vous utilisez un registry privé
 
         // Définir les variables d'environnement
         env.JAVA_HOME = jdkHome
-        env.PATH = "${mavenHome}/bin:${jdkHome}/bin:${env.PATH}"
+        env.PATH = "${dockerHome}/bin:${mavenHome}/bin:${jdkHome}/bin:${env.PATH}"
         env.MAVEN_HOME = mavenHome
+        env.DOCKER_BUILDKIT = "1" // Activer BuildKit pour des builds plus rapides
 
         stage('Checkout') {
-            // Vérification de la branche et du commit
             checkout scm
         }
 
-        stage('Check Maven') {
+        stage('Environment Setup') {
             script {
-                // Affiche l'emplacement de Maven
-                echo "MAVEN_HOME is: ${mavenHome}"
-                echo "JAVA_HOME is: ${jdkHome}"
+                echo "MAVEN_HOME: ${mavenHome}"
+                echo "JAVA_HOME: ${jdkHome}"
+                echo "DOCKER_HOME: ${dockerHome}"
                 echo "Branch: ${env.BRANCH_NAME}"
                 echo "Environment: ${ENV_NAME}"
                 echo "HTTP Port: ${HTTP_PORT}"
                 echo "Container: ${CONTAINER_NAME}:${CONTAINER_TAG}"
+
+                // Vérification des outils
+                sh 'mvn --version'
+                sh 'java -version'
+                sh 'docker --version'
             }
         }
 
         stage('Build & Test') {
-            // Affichage des variables d'environnement pour le diagnostic
-            sh 'echo "JAVA_HOME: $JAVA_HOME"'
-            sh 'echo "MAVEN_HOME: $MAVEN_HOME"'
-            sh 'echo "PATH: $PATH"'
-            sh 'mvn --version'
-            // Exécution du build avec Maven (une seule commande suffit)
             sh "mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install"
         }
 
         stage('Coverage Report') {
-            // Enregistrement du rapport de couverture avec JaCoCo
             recordCoverage(
                 tools: [[parser: 'JACOCO']],
                 id: 'jacoco',
@@ -57,116 +57,126 @@ node {
         }
 
         stage('SonarQube Analysis') {
-            // Exécution de l'analyse SonarQube
             withSonarQubeEnv('SonarQube') {
                 withCredentials([string(credentialsId: 'sonartoken', variable: 'SONAR_TOKEN')]) {
-                    sh '''
+                    sh """
                         mvn sonar:sonar \
                           -Dsonar.projectKey=Poseidon-skeleton \
-                          -Dsonar.host.url=$SONAR_HOST_URL \
-                          -Dsonar.token=${SONAR_TOKEN} \
+                          -Dsonar.host.url=\$SONAR_HOST_URL \
+                          -Dsonar.token=\${SONAR_TOKEN} \
                           -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-                    '''
+                    """
                 }
             }
         }
 
         stage('Quality Gate') {
-            // Vérification du quality gate
             timeout(time: 2, unit: 'MINUTES') {
                 waitForQualityGate abortPipeline: true
             }
         }
 
-        stage('Docker Availability Check') {
+        stage('Docker Setup') {
             script {
                 try {
-                    sh 'docker --version'
-                    echo "Docker est disponible"
+                    sh """
+                        docker --version
+                        docker-compose --version || echo "docker-compose non installé"
+                    """
                     env.DOCKER_AVAILABLE = "true"
                 } catch (Exception e) {
                     echo "ATTENTION: Docker n'est pas installé ou accessible sur cet agent Jenkins"
-                    echo "Les étapes Docker seront ignorées"
                     env.DOCKER_AVAILABLE = "false"
                     currentBuild.result = 'UNSTABLE'
                 }
             }
         }
 
-        stage("Image Prune") {
-            script {
-                if (env.DOCKER_AVAILABLE == "true") {
+        stage("Clean Docker Environment") {
+            when {
+                expression { env.DOCKER_AVAILABLE == "true" }
+            }
+            steps {
+                script {
                     imagePrune(CONTAINER_NAME)
-                } else {
-                    echo "Étape Image Prune ignorée - Docker non disponible"
                 }
             }
         }
 
-        stage('Image Build') {
-            script {
-                if (env.DOCKER_AVAILABLE == "true") {
+        stage('Build Docker Image') {
+            when {
+                expression { env.DOCKER_AVAILABLE == "true" }
+            }
+            steps {
+                script {
                     imageBuild(CONTAINER_NAME, CONTAINER_TAG)
-                } else {
-                    echo "Étape Image Build ignorée - Docker non disponible"
                 }
             }
         }
 
         stage('Push to Docker Registry') {
-            script {
-                if (env.DOCKER_AVAILABLE == "true") {
-                    try {
-                        withCredentials([usernamePassword(credentialsId: 'dockerhubcredentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                            pushToImage(CONTAINER_NAME, CONTAINER_TAG, USERNAME, PASSWORD)
+            when {
+                expression { env.DOCKER_AVAILABLE == "true" }
+            }
+            steps {
+                script {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'dockerhubcredentials',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASSWORD'
+                    )]) {
+                        pushToImage(CONTAINER_NAME, CONTAINER_TAG, DOCKER_USER, DOCKER_PASSWORD, DOCKER_REGISTRY)
+
+                        // Tag supplémentaire pour master
+                        if (env.BRANCH_NAME == 'master') {
+                            sh """
+                                docker tag ${CONTAINER_NAME}:${CONTAINER_TAG} ${DOCKER_USER}/${CONTAINER_NAME}:latest
+                                docker push ${DOCKER_USER}/${CONTAINER_NAME}:latest
+                            """
                         }
-                    } catch (Exception e) {
-                        echo "ATTENTION: Credentials 'dockerhubcredentials' non trouvés. Push vers Docker Hub ignoré."
-                        echo "Erreur: ${e.getMessage()}"
-                        echo "Veuillez créer les credentials Docker Hub avec l'ID 'dockerhubcredentials' dans Jenkins."
-                        currentBuild.result = 'UNSTABLE'
                     }
-                } else {
-                    echo "Étape Push to Docker Registry ignorée - Docker non disponible"
                 }
             }
         }
 
-        stage('Run App') {
-            script {
-                if (env.DOCKER_AVAILABLE == "true") {
-                    // Vérifier si les credentials Docker Hub existent
-                    try {
-                        withCredentials([usernamePassword(credentialsId: 'dockerhubcredentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                            runApp(CONTAINER_NAME, CONTAINER_TAG, USERNAME, HTTP_PORT, ENV_NAME)
-                        }
-                    } catch (Exception e) {
-                        echo "ATTENTION: Impossible de démarrer l'application."
-                        echo "Erreur: ${e.getMessage()}"
-                        echo "Vérifiez que l'image a été correctement construite et pushée."
-                        currentBuild.result = 'UNSTABLE'
+        stage('Deploy Application') {
+            when {
+                expression { env.DOCKER_AVAILABLE == "true" }
+            }
+            steps {
+                script {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'dockerhubcredentials',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASSWORD'
+                    )]) {
+                        runApp(CONTAINER_NAME, CONTAINER_TAG, DOCKER_USER, HTTP_PORT, ENV_NAME)
                     }
-                } else {
-                    echo "Étape Run App ignorée - Docker non disponible"
                 }
             }
         }
 
-        stage('Résultat') {
-            // Affichage du résultat du build
-            script {
-                if (currentBuild.result == null || currentBuild.result == 'SUCCESS') {
-                    echo 'Build, couverture et qualité OK !'
-                    if (env.DOCKER_AVAILABLE != "true") {
-                        echo 'Note: Les étapes Docker ont été ignorées (Docker non disponible)'
+        stage('Verify Deployment') {
+            when {
+                expression { env.DOCKER_AVAILABLE == "true" }
+            }
+            steps {
+                script {
+                    timeout(time: 2, unit: 'MINUTES') {
+                        waitUntil {
+                            try {
+                                def status = sh(
+                                    script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:${HTTP_PORT}/actuator/health",
+                                    returnStdout: true
+                                ).trim()
+                                return status == "200"
+                            } catch (Exception e) {
+                                echo "Application not ready yet..."
+                                return false
+                            }
+                        }
+                        echo "Application is up and running!"
                     }
-                } else if (currentBuild.result == 'UNSTABLE') {
-                    echo 'Build terminé avec des avertissements. Vérifiez les logs.'
-                    if (env.DOCKER_AVAILABLE != "true") {
-                        echo 'Avertissement: Docker n\'est pas disponible sur cet agent Jenkins'
-                    }
-                } else {
-                    echo 'Échec, vérifier les logs et SonarQube.'
                 }
             }
         }
@@ -176,98 +186,132 @@ node {
         echo "Pipeline failed: ${e.getMessage()}"
         throw e
     } finally {
-        deleteDir()
+        // Nettoyage
+        script {
+            if (env.DOCKER_AVAILABLE == "true") {
+                sh "docker logout ${DOCKER_REGISTRY} || true"
+            }
+            deleteDir()
+        }
         sendEmail(EMAIL_RECIPIENTS)
     }
 }
+
+// Fonctions utilitaires
 
 def sendEmail(recipients) {
     mail(
         to: recipients,
         subject: "Build ${env.BUILD_NUMBER} - ${currentBuild.currentResult} - (${currentBuild.fullDisplayName})",
-        body: "Check console output at: ${env.BUILD_URL}/console" + "\n"
+        body: """
+            Résultat du build: ${currentBuild.currentResult}
+            URL du build: ${env.BUILD_URL}
+            Branch: ${env.BRANCH_NAME}
+            Détails: ${env.BUILD_URL}/console
+        """
     )
 }
 
 def imagePrune(containerName) {
     try {
-        sh "docker image prune -f"
-        sh "docker stop ${containerName} || true"
-        sh "docker rm ${containerName} || true"
+        sh """
+            docker stop ${containerName} || true
+            docker rm ${containerName} || true
+            docker system prune -f || true
+        """
     } catch (Exception e) {
-        echo "Nettoyage des images/conteneurs: ${e.getMessage()}"
+        echo "Erreur lors du nettoyage Docker: ${e.getMessage()}"
     }
 }
 
 def imageBuild(containerName, tag) {
     try {
-        sh "docker build -t ${containerName}:${tag} --pull --no-cache ."
-        echo "Construction de l'image terminée: ${containerName}:${tag}"
+        sh """
+            docker build \
+                -t ${containerName}:${tag} \
+                --pull \
+                --no-cache \
+                --build-arg BUILD_NUMBER=${env.BUILD_NUMBER} \
+                --build-arg GIT_COMMIT=${env.GIT_COMMIT} \
+                .
+        """
     } catch (Exception e) {
-        echo "Erreur lors de la construction de l'image: ${e.getMessage()}"
+        echo "Erreur lors du build Docker: ${e.getMessage()}"
         throw e
     }
 }
 
-def pushToImage(containerName, tag, dockerUser, dockerPassword) {
+def pushToImage(containerName, tag, dockerUser, dockerPassword, registry) {
     try {
-        sh "docker login -u ${dockerUser} -p ${dockerPassword}"
-        sh "docker tag ${containerName}:${tag} ${dockerUser}/${containerName}:${tag}"
-        sh "docker push ${dockerUser}/${containerName}:${tag}"
-        echo "Push de l'image terminé: ${dockerUser}/${containerName}:${tag}"
+        sh """
+            echo '${dockerPassword}' | docker login -u ${dockerUser} --password-stdin ${registry}
+            docker tag ${containerName}:${tag} ${dockerUser}/${containerName}:${tag}
+            docker push ${dockerUser}/${containerName}:${tag}
+        """
     } catch (Exception e) {
-        echo "Erreur lors du push de l'image: ${e.getMessage()}"
+        echo "Erreur lors du push Docker: ${e.getMessage()}"
         throw e
-    } finally {
-        // Nettoyage des credentials Docker
-        sh "docker logout || true"
     }
 }
 
-def runApp(containerName, tag, dockerHubUser, httpPort, envName) {
+def runApp(containerName, tag, dockerUser, httpPort, envName) {
     try {
-        // Arrêter et supprimer le conteneur existant s'il existe
-        sh "docker stop ${containerName} || true"
-        sh "docker rm ${containerName} || true"
+        // Pull de la dernière image
+        timeout(time: 5, unit: 'MINUTES') {
+            sh "docker pull ${dockerUser}/${containerName}:${tag}"
+        }
 
-        // Tirer la dernière image
-        sh "docker pull ${dockerHubUser}/${containerName}:${tag}"
+        // Démarrer le conteneur avec vérification de santé
+        sh """
+            docker run \
+                --name ${containerName} \
+                --env SPRING_PROFILES_ACTIVE=${envName} \
+                -p ${httpPort}:${httpPort} \
+                -d \
+                --health-cmd="curl -f http://localhost:${httpPort}/actuator/health || exit 1" \
+                --health-interval=5s \
+                --health-retries=3 \
+                --health-timeout=2s \
+                ${dockerUser}/${containerName}:${tag}
+        """
 
-        // Démarrer le nouveau conteneur
-        sh "docker run --env SPRING_PROFILES_ACTIVE=${envName} -d -p ${httpPort}:${httpPort} --name ${containerName} ${dockerHubUser}/${containerName}:${tag}"
+        // Vérification du statut
+        sleep(time: 5, unit: 'SECONDS')
+        def health = sh(
+            script: "docker inspect --format='{{.State.Health.Status}}' ${containerName}",
+            returnStdout: true
+        ).trim()
 
-        echo "Application démarrée sur le port: ${httpPort} (http)"
-        echo "Profil Spring actif: ${envName}"
-
-        // Vérifier que le conteneur fonctionne
-        sleep(time: 10, unit: 'SECONDS')
-        sh "docker ps | grep ${containerName}"
-
+        if (health != "healthy") {
+            error "Le conteneur n'est pas healthy (statut: ${health})"
+        }
     } catch (Exception e) {
-        echo "Erreur lors du démarrage de l'application: ${e.getMessage()}"
-        // Afficher les logs du conteneur pour le debug
+        // Afficher les logs en cas d'erreur
         sh "docker logs ${containerName} || true"
         throw e
     }
 }
 
+// Helpers
+
 String getEnvName(String branchName) {
-    if (branchName == 'master') {
-        return 'prod'
+    switch(branchName) {
+        case 'master': return 'prod'
+        case 'develop': return 'uat'
+        default: return 'dev'
     }
-    return (branchName == 'develop') ? 'uat' : 'dev'
 }
 
 String getHTTPPort(String branchName) {
-    if (branchName == 'master') {
-        return '9003'
+    switch(branchName) {
+        case 'master': return '9003'
+        case 'develop': return '9002'
+        default: return '9001'
     }
-    return (branchName == 'develop') ? '9002' : '9001'
 }
 
 String getTag(String buildNumber, String branchName) {
-    if (branchName == 'master') {
-        return buildNumber + '-stable'
-    }
-    return buildNumber + '-unstable'
+    return (branchName == 'master') ?
+        "${buildNumber}-stable" :
+        "${buildNumber}-${branchName.replace('/', '-')}-unstable"
 }

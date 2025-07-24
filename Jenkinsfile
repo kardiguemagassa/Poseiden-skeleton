@@ -1,20 +1,36 @@
 node {
+    // Définir les outils au début du node
+    def MAVEN_HOME = tool name: 'M3', type: 'maven'
+    def JAVA_HOME = tool name: 'JDK-21', type: 'jdk'
+
+    // Configurer l'environnement PATH
+    env.PATH = "${MAVEN_HOME}/bin:${JAVA_HOME}/bin:${env.PATH}"
+    env.JAVA_HOME = JAVA_HOME
+    env.MAVEN_HOME = MAVEN_HOME
+
     stage('Checkout') {
         // Vérification de la branche et du commit
         checkout scm
     }
 
+    stage('Check Maven') {
+        // Supprimer le bloc 'steps' - pas nécessaire en syntaxe scriptée
+        script {
+            // Affiche l'emplacement de Maven
+            echo "MAVEN_HOME is: ${MAVEN_HOME}"
+            sh 'mvn --version'  // Test pour vérifier que Maven fonctionne
+        }
+    }
+
     stage('Build & Test') {
-        // Définir les outils Maven et Java via 'tool'
-        MAVEN_HOME = tool name: 'M3', type: 'Maven'
-        JDK_HOME = tool name: 'JDK-21', type: 'JDK'
+        // Les outils sont déjà définis au début
 
         // Affichage des variables d'environnement pour le diagnostic
         sh 'echo "JAVA_HOME: $JAVA_HOME"'
         sh 'echo "MAVEN_HOME: $MAVEN_HOME"'
 
-        // Exécution du build avec Maven
-        sh "${MAVEN_HOME}/bin/mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install"
+        // Exécution du build avec Maven (utiliser directement mvn)
+        sh "mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install"
     }
 
     stage('Coverage Report') {

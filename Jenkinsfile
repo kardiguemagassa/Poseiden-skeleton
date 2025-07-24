@@ -138,14 +138,8 @@ node {
         }
 
         stage('Deploy') {
-            when {
-                expression {
-                    env.DOCKER_AVAILABLE == "true" &&
-                    (BRANCH_NAME == 'master' || BRANCH_NAME == 'develop')
-                }
-            }
-            steps {
-                script {
+            script {
+                if (env.DOCKER_AVAILABLE == "true" && (BRANCH_NAME == 'master' || BRANCH_NAME == 'develop')) {
                     try {
                         withCredentials([usernamePassword(
                             credentialsId: 'dockerhub-credentials',
@@ -177,9 +171,12 @@ node {
                     } catch (Exception e) {
                         error "Échec du déploiement: ${e.getMessage()}"
                     }
+                } else {
+                    echo "Conditions de déploiement non remplies. Docker ou branche non autorisée."
                 }
             }
         }
+
 
     } catch (Exception e) {
         currentBuild.result = 'FAILURE'

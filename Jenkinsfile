@@ -107,46 +107,38 @@ node {
         }
 
         stage('Docker Push') {
-            when {
-                expression { env.DOCKER_AVAILABLE == "true" }
-            }
+            // Suppression de la condition 'when' et remplacement par une vérification conditionnelle standard
             steps {
                 script {
-                    // 1. Vérification des prérequis
-                    def dockerUser = credentials('dockerhub-credentials')?.username ?: error("Docker Hub username non trouvé")
-                    def dockerPassword = credentials('dockerhub-credentials')?.password ?: error("Docker Hub password non trouvé")
-
-                    // 2. Configuration du nom d'image
-                    def imageName = "${dockerUser}/${CONTAINER_NAME}:${CONTAINER_TAG}"
-
-                    // 3. Opérations Docker sécurisées
-                    withCredentials([usernamePassword(
-                        credentialsId: 'dockerhub-credentials',
-                        usernameVariable: 'DOCKER_HUB_USER',
-                        passwordVariable: 'DOCKER_HUB_PASSWORD'
-                    )]) {
+                    // Vérification manuelle de la disponibilité de Docker
+                    if (env.DOCKER_AVAILABLE == "true") {
                         try {
-                            // Version sécurisée du login (évite l'exposition du password dans l'historique)
-                            sh """
-                                echo ${dockerPassword} | docker login -u ${dockerUser} --password-stdin
-                                docker tag ${CONTAINER_NAME}:${CONTAINER_TAG} ${imageName}
-                                docker push ${imageName}
-                            """
+                            withCredentials([usernamePassword(
+                                credentialsId: 'dockerhub-credentials',
+                                usernameVariable: 'DOCKER_USER',
+                                passwordVariable: 'DOCKER_PASSWORD'
+                            )]) {
+                                // Version sécurisée avec --password-stdin
+                                sh '''
+                                    echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+                                    docker tag "${CONTAINER_NAME}:${CONTAINER_TAG}" "${DOCKER_USER}/${CONTAINER_NAME}:${CONTAINER_TAG}"
+                                    docker push "${DOCKER_USER}/${CONTAINER_NAME}:${CONTAINER_TAG}"
+                                    docker logout
+                                '''
 
-                            // Optionnel : Tag supplémentaire pour la branche master
-                            if (env.BRANCH_NAME == 'master') {
-                                sh """
-                                    docker tag ${CONTAINER_NAME}:${CONTAINER_TAG} ${dockerUser}/${CONTAINER_NAME}:latest
-                                    docker push ${dockerUser}/${CONTAINER_NAME}:latest
-                                """
+                                // Option: Ajouter un tag 'latest' pour la branche master
+                                if (env.BRANCH_NAME == 'master') {
+                                    sh '''
+                                        docker tag "${CONTAINER_NAME}:${CONTAINER_TAG}" "${DOCKER_USER}/${CONTAINER_NAME}:latest"
+                                        docker push "${DOCKER_USER}/${CONTAINER_NAME}:latest"
+                                    '''
+                                }
                             }
                         } catch (Exception e) {
                             error "Échec du push Docker: ${e.getMessage()}"
-                        } finally {
-                            // Nettoyage sécurisé
-                            sh "docker logout || true"
-                            sh "unset DOCKER_HUB_USER DOCKER_HUB_PASSWORD || true"
                         }
+                    } else {
+                        echo "Docker non disponible - étape de push ignorée"
                     }
                 }
             }

@@ -112,21 +112,40 @@ node {
             }
             steps {
                 script {
+                    // 1. Vérification des prérequis
+                    def dockerUser = credentials('dockerhub-credentials')?.username ?: error("Docker Hub username non trouvé")
+                    def dockerPassword = credentials('dockerhub-credentials')?.password ?: error("Docker Hub password non trouvé")
+
+                    // 2. Configuration du nom d'image
+                    def imageName = "${dockerUser}/${CONTAINER_NAME}:${CONTAINER_TAG}"
+
+                    // 3. Opérations Docker sécurisées
                     withCredentials([usernamePassword(
-                        credentialsId: 'dockerhubcredentials',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASSWORD'
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKER_HUB_USER',
+                        passwordVariable: 'DOCKER_HUB_PASSWORD'
                     )]) {
                         try {
+                            // Version sécurisée du login (évite l'exposition du password dans l'historique)
                             sh """
-                                docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
-                                docker tag ${CONTAINER_NAME}:${CONTAINER_TAG} ${DOCKER_USER}/${CONTAINER_NAME}:${CONTAINER_TAG}
-                                docker push ${DOCKER_USER}/${CONTAINER_NAME}:${CONTAINER_TAG}
+                                echo ${dockerPassword} | docker login -u ${dockerUser} --password-stdin
+                                docker tag ${CONTAINER_NAME}:${CONTAINER_TAG} ${imageName}
+                                docker push ${imageName}
                             """
+
+                            // Optionnel : Tag supplémentaire pour la branche master
+                            if (env.BRANCH_NAME == 'master') {
+                                sh """
+                                    docker tag ${CONTAINER_NAME}:${CONTAINER_TAG} ${dockerUser}/${CONTAINER_NAME}:latest
+                                    docker push ${dockerUser}/${CONTAINER_NAME}:latest
+                                """
+                            }
                         } catch (Exception e) {
                             error "Échec du push Docker: ${e.getMessage()}"
                         } finally {
+                            // Nettoyage sécurisé
                             sh "docker logout || true"
+                            sh "unset DOCKER_HUB_USER DOCKER_HUB_PASSWORD || true"
                         }
                     }
                 }

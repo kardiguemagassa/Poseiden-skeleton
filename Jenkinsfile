@@ -3,50 +3,56 @@ def EMAIL_RECIPIENTS = "magassakara@gmail.com"
 
 node {
     try {
-        // Configuration des outils avec fallback
-        def mavenHome = tool name: 'M3', type: 'maven'
-        def jdkHome = tool name: 'JDK-21', type: 'jdk'
+            // Initialisation des variables avec des valeurs par défaut
+            def BRANCH_NAME = env.BRANCH_NAME ?: "unknown"
+            def BUILD_NUMBER = env.BUILD_NUMBER ?: "0"
 
-        // Tentative de configuration Docker avec gestion d'erreur
-        def dockerHome = null
-        try {
-            dockerHome = tool name: 'docker', type: 'docker'
-            env.PATH = "${dockerHome}/bin:${mavenHome}/bin:${jdkHome}/bin:${env.PATH}"
-            env.DOCKER_AVAILABLE = "true"
-            } catch (Exception e) {
-                    echo "ATTENTION: Docker n'est pas configuré dans Jenkins"
-                    env.DOCKER_AVAILABLE = "false"
-                    env.PATH = "${mavenHome}/bin:${jdkHome}/bin:${env.PATH}"
+            // Configuration des outils avec gestion des erreurs
+            def mavenHome = tool name: 'M3', type: 'maven'
+            def jdkHome = tool name: 'JDK-21', type: 'jdk'
+
+            // Configuration Docker avec fallback
+            def dockerHome = '/usr/bin' // Chemin par défaut
+            env.DOCKER_AVAILABLE = fileExists("${dockerHome}/docker") ? "true" : "false"
+            env.PATH = "${dockerHome}:${mavenHome}/bin:${jdkHome}/bin:${env.PATH}"
+
+            def HTTP_PORT = getHTTPPort(BRANCH_NAME)
+            def ENV_NAME = getEnvName(BRANCH_NAME)
+            def CONTAINER_NAME = "poseidon-app"
+            def CONTAINER_TAG = getTag(BUILD_NUMBER, BRANCH_NAME)
+
+            // Configuration Java/Maven
+            env.JAVA_HOME = jdkHome
+            env.MAVEN_HOME = mavenHome
+
+            stage('Checkout') {
+                checkout scm
+                // Récupération des métadonnées Git si elles ne sont pas déjà définies
+                if (!env.BRANCH_NAME) {
+                    BRANCH_NAME = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
                 }
+                if (!env.BUILD_NUMBER) {
+                    BUILD_NUMBER = currentBuild.number.toString()
+                }
+            }
 
-                def HTTP_PORT = getHTTPPort(env.BRANCH_NAME)
-                def ENV_NAME = getEnvName(env.BRANCH_NAME)
-                def CONTAINER_NAME = "poseidon-app"
-                def CONTAINER_TAG = getTag(env.BUILD_NUMBER, env.BRANCH_NAME)
+            stage('Environment Setup') {
+                script {
+                    echo "Build Number: ${BUILD_NUMBER}"
+                    echo "Branch Name: ${BRANCH_NAME}"
+                    echo "MAVEN_HOME: ${mavenHome}"
+                    echo "JAVA_HOME: ${jdkHome}"
+                    echo "Docker disponible: ${env.DOCKER_AVAILABLE}"
 
-                // Configuration Java/Maven
-                env.JAVA_HOME = jdkHome
-                env.MAVEN_HOME = mavenHome
+                    sh 'mvn --version'
+                    sh 'java -version'
 
-        stage('Checkout') {
-            checkout scm
-        }
-
-        stage('Environment Setup') {
-                    script {
-                        echo "MAVEN_HOME: ${mavenHome}"
-                        echo "JAVA_HOME: ${jdkHome}"
-                        echo "Docker disponible: ${env.DOCKER_AVAILABLE}"
-                        echo "Branch: ${env.BRANCH_NAME}"
-
-                        sh 'mvn --version'
-                        sh 'java -version'
-
-                        if (env.DOCKER_AVAILABLE == "true") {
-                            sh 'docker --version'
-                        }
+                    if (env.DOCKER_AVAILABLE == "true") {
+                        sh 'docker --version'
                     }
                 }
+            }
+
 
         stage('Environment Setup') {
             script {

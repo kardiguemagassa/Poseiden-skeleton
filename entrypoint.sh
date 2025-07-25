@@ -8,4 +8,4 @@ exec java \
     -XX:+UseContainerSupport \
     -XX:MaxRAMPercentage=75.0 \
     -XX:+ExitOnOutOfMemoryError \
-    -jar app.jarrofiles.active=${SPRING_ACTIVE_PROFILES} "spring-boot-skeleton-0.0.1-SNAPSHOT.jar"
+    -jar app.jar

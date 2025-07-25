@@ -2,33 +2,34 @@ def EMAIL_RECIPIENTS = "magassakara@gmail.com"
 
 node {
     try {
-        // Initialisation
-        def BRANCH_NAME = env.BRANCH_NAME ?: sh(
-            script: 'git rev-parse --abbrev-ref HEAD || echo "unknown"',
-            returnStdout: true
-        ).trim()
+        stage('Initialisation') {
+            def BRANCH_NAME = env.BRANCH_NAME ?: sh(
+                script: 'git rev-parse --abbrev-ref HEAD || echo "unknown"',
+                returnStdout: true
+            ).trim()
 
-        def BUILD_NUMBER = env.BUILD_NUMBER ?: currentBuild.number ?: "0"
-        def CONTAINER_NAME = "poseidon-app"
-        def DOCKER_REGISTRY = "docker.io"
+            def BUILD_NUMBER = env.BUILD_NUMBER ?: currentBuild.number ?: "0"
+            def CONTAINER_NAME = "poseidon-app"
+            def DOCKER_REGISTRY = "docker.io"
 
-        def mavenHome = tool name: 'M3', type: 'maven'
-        def jdkHome = tool name: 'JDK-21', type: 'jdk'
-        def dockerHome = '/usr/local/bin'
+            def mavenHome = tool name: 'M3', type: 'maven'
+            def jdkHome = tool name: 'JDK-21', type: 'jdk'
+            def dockerHome = '/usr/local/bin'
 
-        env.DOCKER_AVAILABLE = sh(
-            script: 'which docker && docker --version >/dev/null 2>&1 && echo "true" || echo "false"',
-            returnStdout: true
-        ).trim() == "true" ? "true" : "false"
+            env.DOCKER_AVAILABLE = sh(
+                script: 'which docker && docker --version >/dev/null 2>&1 && echo "true" || echo "false"',
+                returnStdout: true
+            ).trim() == "true" ? "true" : "false"
 
-        env.JAVA_HOME = jdkHome
-        env.MAVEN_HOME = mavenHome
-        env.PATH = "${dockerHome}:${mavenHome}/bin:${jdkHome}/bin:${env.PATH}"
-        env.DOCKER_BUILDKIT = "1"
+            env.JAVA_HOME = jdkHome
+            env.MAVEN_HOME = mavenHome
+            env.PATH = "${dockerHome}:${mavenHome}/bin:${jdkHome}/bin:${env.PATH}"
+            env.DOCKER_BUILDKIT = "1"
 
-        def HTTP_PORT = getHTTPPort(BRANCH_NAME)
-        def ENV_NAME = getEnvName(BRANCH_NAME)
-        def CONTAINER_TAG = getTag(BUILD_NUMBER, BRANCH_NAME)
+            def HTTP_PORT = getHTTPPort(BRANCH_NAME)
+            def ENV_NAME = getEnvName(BRANCH_NAME)
+            def CONTAINER_TAG = getTag(BUILD_NUMBER, BRANCH_NAME)
+        }
 
         stage('Checkout') {
             checkout scm

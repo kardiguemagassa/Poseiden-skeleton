@@ -1,5 +1,3 @@
-//@Library('shared-library') _
-
 // Configuration centralisée
 def config = [
     emailRecipients: "magassakara@gmail.com",
@@ -31,7 +29,6 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '10'))
         skipDefaultCheckout(true)
         timestamps()
-        ansiColor('xterm')
     }
 
     tools {
@@ -81,10 +78,24 @@ pipeline {
             }
             post {
                 always {
-                    publishTestResults testResultsPattern: 'target/surefire-reports/*.xml'
-                    publishCoverage adapters: [
-                        jacocoAdapter('target/site/jacoco/jacoco.xml')
-                    ], sourceFileResolver: sourceFiles('STORE_LAST_BUILD')
+                    script {
+                        // Publication des résultats de tests
+                        if (fileExists('target/surefire-reports/*.xml')) {
+                            publishTestResults testResultsPattern: 'target/surefire-reports/*.xml'
+                        }
+
+                        // Archivage des rapports de couverture
+                        if (fileExists('target/site/jacoco/jacoco.xml')) {
+                            publishHTML([
+                                allowMissing: false,
+                                alwaysLinkToLastBuild: true,
+                                keepAll: true,
+                                reportDir: 'target/site/jacoco',
+                                reportFiles: 'index.html',
+                                reportName: 'Code Coverage Report'
+                            ])
+                        }
+                    }
                 }
             }
         }
@@ -182,7 +193,7 @@ pipeline {
             }
             steps {
                 script {
-                    performHealthCheck()
+                    performHealthCheck(config)
                 }
             }
         }
@@ -192,7 +203,7 @@ pipeline {
         always {
             script {
                 // Nettoyage des images Docker locales
-                cleanupDockerImages()
+                cleanupDockerImages(config)
 
                 // Archivage des artefacts
                 archiveArtifacts artifacts: 'target/*.jar', fingerprint: true, allowEmptyArchive: true
@@ -231,9 +242,9 @@ def checkDockerAvailability() {
         def result = sh(
             script: '''
                 # Vérification avec retry
-                for i in {1..3}; do
+                for i in 1 2 3; do
                     if command -v docker >/dev/null 2>&1; then
-                        if docker info >/dev/null 2>&1; then
+                        if timeout 10 docker info >/dev/null 2>&1; then
                             echo "true"
                             exit 0
                         fi
@@ -249,8 +260,11 @@ def checkDockerAvailability() {
         if (result == "true") {
             echo "✅ Docker disponible et fonctionnel"
             sh 'docker --version'
+            sh 'docker info'
         } else {
             echo "❌ Docker non disponible ou non fonctionnel"
+            echo "💡 Vérifiez que Docker est installé et que le daemon est démarré"
+            echo "💡 Vérifiez les permissions de l'utilisateur Jenkins"
         }
 
         return result
@@ -280,7 +294,7 @@ def displayBuildInfo(config) {
 
 def validateDockerPrerequisites() {
     if (env.DOCKER_AVAILABLE != "true") {
-        error "🚫 Docker n'est pas disponible. Impossible de continuer."
+        error "🚫 Docker n'est pas disponible. Impossible de continuer avec les étapes Docker."
     }
 
     if (!fileExists('Dockerfile')) {
@@ -393,11 +407,6 @@ def deployApplication(config) {
                     -e "SPRING_PROFILES_ACTIVE=${env.ENV_NAME}" \
                     -e "SERVER_PORT=8080" \
                     -e "JAVA_OPTS=-Xmx512m -Xms256m" \
-                    --health-cmd="curl -f http://localhost:8080/actuator/health || exit 1" \
-                    --health-interval=30s \
-                    --health-timeout=10s \
-                    --health-retries=3 \
-                    --health-start-period=40s \
                     "\${DOCKER_USER}/${config.containerName}:${env.CONTAINER_TAG}"
             """
 
@@ -408,24 +417,26 @@ def deployApplication(config) {
     }
 }
 
-def performHealthCheck() {
+def performHealthCheck(config) {
     try {
         echo "🩺 Vérification de la santé de l'application..."
 
+        // Attendre que le conteneur soit en cours d'exécution
         timeout(time: config.timeouts.deployment, unit: 'MINUTES') {
             waitUntil {
                 script {
                     def status = sh(
-                        script: "docker inspect -f '{{.State.Health.Status}}' ${config.containerName} 2>/dev/null || echo 'no-health'",
+                        script: "docker inspect -f '{{.State.Status}}' ${config.containerName} 2>/dev/null || echo 'not-found'",
                         returnStdout: true
                     ).trim()
 
-                    echo "Status de santé: ${status}"
+                    echo "Status du conteneur: ${status}"
 
-                    if (status == "healthy") {
+                    if (status == "running") {
                         return true
-                    } else if (status == "unhealthy") {
-                        error "❌ L'application est en mauvaise santé"
+                    } else if (status == "exited") {
+                        sh "docker logs ${config.containerName} --tail 50"
+                        error "❌ Le conteneur s'est arrêté de manière inattendue"
                     }
 
                     sleep(10)
@@ -434,14 +445,30 @@ def performHealthCheck() {
             }
         }
 
-        // Test HTTP additionnel
-        sh """
-            curl -f "http://localhost:${env.HTTP_PORT}/actuator/health" || {
-                echo "❌ Health check HTTP échoué"
-                docker logs ${config.containerName} --tail 50
-                exit 1
+        // Attendre que l'application soit prête
+        echo "⏳ Attente du démarrage de l'application..."
+        sleep(30)
+
+        // Test HTTP
+        timeout(time: 2, unit: 'MINUTES') {
+            waitUntil {
+                script {
+                    def exitCode = sh(
+                        script: "curl -f -s http://localhost:${env.HTTP_PORT}/actuator/health > /dev/null",
+                        returnStatus: true
+                    )
+
+                    if (exitCode == 0) {
+                        echo "✅ Application répond correctement"
+                        return true
+                    } else {
+                        echo "⏳ Application pas encore prête..."
+                        sleep(10)
+                        return false
+                    }
+                }
             }
-        """
+        }
 
         echo "✅ Application en bonne santé et accessible"
 
@@ -452,7 +479,7 @@ def performHealthCheck() {
     }
 }
 
-def cleanupDockerImages() {
+def cleanupDockerImages(config) {
     try {
         if (env.DOCKER_AVAILABLE == "true") {
             echo "🧹 Nettoyage des images Docker..."
@@ -461,9 +488,8 @@ def cleanupDockerImages() {
                 docker image prune -f || true
 
                 # Garde seulement les 3 dernières versions de notre image
-                docker images "${config.containerName}" --format "table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}" | \
-                tail -n +2 | sort -k2 -r | tail -n +4 | awk '{print \$1}' | \
-                xargs -r docker rmi || true
+                docker images "${config.containerName}" --format "{{.Repository}}:{{.Tag}}" | \
+                head -n -3 | xargs -r docker rmi || true
             """
         }
     } catch (Exception e) {

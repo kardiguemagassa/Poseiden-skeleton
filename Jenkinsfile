@@ -79,21 +79,15 @@ pipeline {
             post {
                 always {
                     script {
-                        // Publication des résultats de tests
-                        if (fileExists('target/surefire-reports/*.xml')) {
-                            publishTestResults testResultsPattern: 'target/surefire-reports/*.xml'
+                        // Publication des résultats de tests avec junit
+                        if (fileExists('target/surefire-reports/TEST-*.xml')) {
+                            junit 'target/surefire-reports/TEST-*.xml'
                         }
 
                         // Archivage des rapports de couverture
-                        if (fileExists('target/site/jacoco/jacoco.xml')) {
-                            publishHTML([
-                                allowMissing: false,
-                                alwaysLinkToLastBuild: true,
-                                keepAll: true,
-                                reportDir: 'target/site/jacoco',
-                                reportFiles: 'index.html',
-                                reportName: 'Code Coverage Report'
-                            ])
+                        if (fileExists('target/site/jacoco/index.html')) {
+                            archiveArtifacts artifacts: 'target/site/jacoco/**', allowEmptyArchive: true
+                            echo "✅ Rapport de couverture archivé dans les artefacts"
                         }
                     }
                 }

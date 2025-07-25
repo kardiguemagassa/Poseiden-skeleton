@@ -1,61 +1,75 @@
 def EMAIL_RECIPIENTS = "magassakara@gmail.com"
 
+def BRANCH_NAME
+def BUILD_NUMBER
+def CONTAINER_NAME = "poseidon-app"
+def DOCKER_REGISTRY = "docker.io"
+def mavenHome
+def jdkHome
+def dockerHome = '/usr/local/bin'
+def HTTP_PORT
+def ENV_NAME
+def CONTAINER_TAG
+
 node {
     try {
         stage('Initialisation') {
-            def BRANCH_NAME = env.BRANCH_NAME ?: sh(
-                script: 'git rev-parse --abbrev-ref HEAD || echo "unknown"',
-                returnStdout: true
-            ).trim()
+            script {
+                BRANCH_NAME = env.BRANCH_NAME ?: sh(
+                    script: 'git rev-parse --abbrev-ref HEAD || echo "unknown"',
+                    returnStdout: true
+                ).trim()
 
-            def BUILD_NUMBER = env.BUILD_NUMBER ?: currentBuild.number ?: "0"
-            def CONTAINER_NAME = "poseidon-app"
-            def DOCKER_REGISTRY = "docker.io"
+                BUILD_NUMBER = env.BUILD_NUMBER ?: currentBuild.number ?: "0"
 
-            def mavenHome = tool name: 'M3', type: 'maven'
-            def jdkHome = tool name: 'JDK-21', type: 'jdk'
-            def dockerHome = '/usr/local/bin'
+                mavenHome = tool name: 'M3', type: 'maven'
+                jdkHome = tool name: 'JDK-21', type: 'jdk'
 
-            env.DOCKER_AVAILABLE = sh(
-                script: 'which docker && docker --version >/dev/null 2>&1 && echo "true" || echo "false"',
-                returnStdout: true
-            ).trim() == "true" ? "true" : "false"
+                env.DOCKER_AVAILABLE = sh(
+                    script: 'which docker && docker --version >/dev/null 2>&1 && echo "true" || echo "false"',
+                    returnStdout: true
+                ).trim() == "true" ? "true" : "false"
 
-            env.JAVA_HOME = jdkHome
-            env.MAVEN_HOME = mavenHome
-            env.PATH = "${dockerHome}:${mavenHome}/bin:${jdkHome}/bin:${env.PATH}"
-            env.DOCKER_BUILDKIT = "1"
+                env.JAVA_HOME = jdkHome
+                env.MAVEN_HOME = mavenHome
+                env.PATH = "${dockerHome}:${mavenHome}/bin:${jdkHome}/bin:${env.PATH}"
+                env.DOCKER_BUILDKIT = "1"
 
-            def HTTP_PORT = getHTTPPort(BRANCH_NAME)
-            def ENV_NAME = getEnvName(BRANCH_NAME)
-            def CONTAINER_TAG = getTag(BUILD_NUMBER, BRANCH_NAME)
+                HTTP_PORT = getHTTPPort(BRANCH_NAME)
+                ENV_NAME = getEnvName(BRANCH_NAME)
+                CONTAINER_TAG = getTag(BUILD_NUMBER.toString(), BRANCH_NAME)
+            }
         }
 
         stage('Checkout') {
             checkout scm
-            BRANCH_NAME = sh(script: 'git rev-parse --abbrev-ref HEAD || echo "unknown"', returnStdout: true).trim()
-            echo "Nom de branche confirmé: ${BRANCH_NAME}"
+            script {
+                BRANCH_NAME = sh(script: 'git rev-parse --abbrev-ref HEAD || echo "unknown"', returnStdout: true).trim()
+                echo "Nom de branche confirmé: ${BRANCH_NAME}"
+            }
         }
 
         stage('Environment Setup') {
-            echo """
-            [Configuration Environnement]
-            • Build #: ${BUILD_NUMBER}
-            • Branch: ${BRANCH_NAME}
-            • Java: ${jdkHome}
-            • Maven: ${mavenHome}
-            • Docker: ${env.DOCKER_AVAILABLE}
-            • Environnement: ${ENV_NAME}
-            • Port: ${HTTP_PORT}
-            • Tag: ${CONTAINER_TAG}
-            """
+            script {
+                echo """
+                [Configuration Environnement]
+                • Build #: ${BUILD_NUMBER}
+                • Branch: ${BRANCH_NAME}
+                • Java: ${jdkHome}
+                • Maven: ${mavenHome}
+                • Docker: ${env.DOCKER_AVAILABLE}
+                • Environnement: ${ENV_NAME}
+                • Port: ${HTTP_PORT}
+                • Tag: ${CONTAINER_TAG}
+                """
 
-            sh 'mvn --version'
-            sh 'java -version'
+                sh 'mvn --version'
+                sh 'java -version'
 
-            if (env.DOCKER_AVAILABLE == "true") {
-                sh 'docker --version'
-                sh 'docker info'
+                if (env.DOCKER_AVAILABLE == "true") {
+                    sh 'docker --version'
+                    sh 'docker info'
+                }
             }
         }
 
@@ -91,6 +105,10 @@ node {
 
         stage('Docker Operations') {
             script {
+                if (!fileExists('Dockerfile')) {
+                    error "Fichier Dockerfile introuvable à la racine du projet."
+                }
+
                 def jarFiles = findFiles(glob: 'target/*.jar').findAll { it.name.endsWith('.jar') }
                 if (jarFiles.length == 0) {
                     error "Aucun fichier JAR trouvé dans target/"
@@ -126,6 +144,7 @@ node {
                                     docker push \${DOCKER_USER}/${CONTAINER_NAME}:latest
                                 """
                             }
+
                             sh "docker logout ${DOCKER_REGISTRY}"
                         }
                     } catch (Exception e) {
@@ -178,7 +197,6 @@ node {
             }
         }
 
-
     } catch (Exception e) {
         currentBuild.result = 'FAILURE'
         echo "ERREUR CRITIQUE: ${e.getMessage()}"
@@ -193,10 +211,11 @@ node {
     }
 }
 
-// Fonctions utilitaires
+// 🔧 Fonctions utilitaires
 
 def sendEmail(recipients) {
     try {
+        def cause = currentBuild.getBuildCauses()?.collect { it.shortDescription }?.join(', ') ?: "Non spécifiée"
         def subject = "[Jenkins] ${env.JOB_NAME} - Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}"
         def body = """
         Résultat: ${currentBuild.currentResult}
@@ -206,7 +225,7 @@ def sendEmail(recipients) {
         Durée: ${currentBuild.durationString.replace(' and counting', '')}
         Détails: ${env.BUILD_URL}console
         Docker: ${env.DOCKER_AVAILABLE == "true" ? "Disponible" : "Indisponible"}
-        Cause: ${currentBuild.getBuildCauses().collect { it.shortDescription }.join(', ')}
+        Cause: ${cause}
         """
         mail(to: recipients, subject: subject, body: body)
     } catch (Exception e) {
